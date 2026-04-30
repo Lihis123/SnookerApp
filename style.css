@@ -166,8 +166,6 @@ html, body {
 .ball-btn:not(.disabled):active { transform:scale(0.92); }
 .ball-btn.disabled { opacity:0.2; cursor:default; box-shadow:none; }
 .ball-btn.ball-potted { opacity:0.28; cursor:default; box-shadow:none; filter:grayscale(0.5); }
-.ball-btn .ball-name { font-size:0.67rem; font-weight:600; letter-spacing:0.3px; }
-.ball-btn .ball-pts  { font-size:1.3rem; font-weight:700; line-height:1; }
 
 /* Foul panel */
 .foul-panel {
@@ -359,7 +357,7 @@ html, body {
 }
 .stat-row { display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; padding:2px 0; }
 .sr-lbl { color:var(--dim); font-size:0.68rem; flex:1; text-align:center; }
-.sr-val { min-width:36px; text-align:center; color:var(--cream); font-weight:600; }
+.sr-val { min-width:54px; text-align:center; color:var(--cream); font-weight:600; }
 .sr-val.sr-win { color:var(--gold-light); font-weight:700; }
 .stat-section {
   margin-top:8px; padding:4px 0 2px;
@@ -367,6 +365,7 @@ html, body {
   color:var(--gold); letter-spacing:1.2px;
   text-transform:uppercase;
   border-bottom:1px solid rgba(201,162,39,0.25);
+  text-align:center;
 }
 .stat-section:first-child { margin-top:0; }
 

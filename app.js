@@ -134,10 +134,10 @@ function renderGame(){
   el('p2-frames').textContent   = p[1].frames;
   el('p1-name-display').textContent = p[0].name;
   el('p2-name-display').textContent = p[1].name;
-  el('p1-break').textContent    = p[0].currentBreak;
-  el('p2-break').textContent    = p[1].currentBreak;
-  el('p1-best').textContent     = p[0].bestBreak;
-  el('p2-best').textContent     = p[1].bestBreak;
+  el('p1-break') && (el('p1-break').textContent = p[0].currentBreak);
+  el('p2-break') && (el('p2-break').textContent = p[1].currentBreak);
+  el('p1-best')  && (el('p1-best').textContent  = p[0].bestBreak);
+  el('p2-best')  && (el('p2-best').textContent  = p[1].bestBreak);
   el('p1-score').textContent    = p[0].score;
   el('p2-score').textContent    = p[1].score;
   el('pts-remaining').textContent = ptsLeft() + ' pts left';
@@ -203,7 +203,6 @@ function renderBalls(){
         const gb = document.createElement('button');
         gb.className = 'ball-btn ball-potted';
         gb.style.cssText = 'background:' + ball.bg + ';color:' + ball.fg;
-        gb.innerHTML = '<span class="ball-name">' + ball.name + '</span><span class="ball-pts">' + ball.value + '</span>';
         c.appendChild(gb);
         return;
       }
@@ -216,7 +215,7 @@ function renderBalls(){
       btn.style.borderColor = 'rgba(255,255,255,0.75)';
       btn.style.boxShadow = '0 0 16px ' + ball.bg + 'aa,0 5px 12px rgba(0,0,0,0.5),inset 0 2px 5px rgba(255,255,255,0.18)';
     }
-    btn.innerHTML = '<span class="ball-name">' + ball.name + '</span><span class="ball-pts">' + ball.value + '</span>';
+    btn.innerHTML = '';
     if(on) btn.addEventListener('click', () => potBall(ball));
     c.appendChild(btn);
   });
@@ -698,7 +697,23 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
   };
   const head = (label) => '<div class="stat-section">'+label+'</div>';
 
-  return '<div class="card-names-row"><span>'+esc(p0Name)+'</span><span></span><span>'+esc(p1Name)+'</span></div>' +
+  // Visits section: combined into header subtext e.g. "Visits  12 – 14"
+  const visitsSubhead = (v0, v1) =>
+    '<div class="stat-section" style="display:flex;justify-content:space-between;align-items:baseline;">'+
+    '<span class="sr-val" style="min-width:54px;text-align:center;font-size:0.68rem;color:var(--cream);">'+(v0||0)+'</span>'+
+    '<span style="flex:1;text-align:center;letter-spacing:1.2px;">Visits</span>'+
+    '<span class="sr-val" style="min-width:54px;text-align:center;font-size:0.68rem;color:var(--cream);">'+(v1||0)+'</span>'+
+    '</div>';
+
+  // Color accuracy row: shows "N (X%)" count with percentage from attempts
+  const colorAccRow = (n0, n1, m0, m1, lbl) => {
+    const t0 = n0 + m0, t1 = n1 + m1;
+    const fmt = (n, t) => t === 0 ? (n > 0 ? String(n) : '\u2013') : n + ' ('+Math.round(n*100/t)+'%)';
+    const r0 = t0 > 0 ? n0/t0 : 0, r1 = t1 > 0 ? n1/t1 : 0;
+    const w0c = (n0 > n1 || r0 > r1) && (n0 > 0 || n1 > 0) ? ' sr-win' : '';
+    const w1c = (n1 > n0 || r1 > r0) && (n0 > 0 || n1 > 0) ? ' sr-win' : '';
+    return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0,t0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1,t1)+'</span></div>';
+  }; '<div class="card-names-row"><span>'+esc(p0Name)+'</span><span></span><span>'+esc(p1Name)+'</span></div>' +
     '<div class="card-stats">' +
       head('Score') +
       sr(p0Score||0, p1Score||0, 'Total points') +
@@ -706,8 +721,7 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
       sr(p0Best||p0s.highestBreak||0, p1Best||p1s.highestBreak||0, 'Best break') +
       sr(avgB(p0b), avgB(p1b), 'Avg break') +
       sr(p0b.filter(b=>b>=20).length, p1b.filter(b=>b>=20).length, '20+ breaks') +
-      head('Visits') +
-      sr(p0s.visits||0, p1s.visits||0, 'Visits') +
+      visitsSubhead(p0s.visits, p1s.visits) +
       sr(fmtTime(p0s.visitTimeMs||0), fmtTime(p1s.visitTimeMs||0), 'Visit time') +
       sr(sp0+'%', sp1+'%', 'Scoring visit %') +
       head('Pots') +
@@ -718,13 +732,13 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
         p1Pots + (p1s.missEasy||0) + (p1s.missMedium||0) + (p1s.missHard||0) + (p1s.safetyShots||0) + (p1s.fouls||0),
         'Total shots') +
       sr(p0Pots, p1Pots, 'Total pots') +
-      accuracyRow(p0Pc.red||0,    p1Pc.red||0,    p0mc.red||0,    p1mc.red||0,    'Reds') +
-      accuracyRow(p0Pc.yellow||0, p1Pc.yellow||0, p0mc.yellow||0, p1mc.yellow||0, 'Yellows') +
-      accuracyRow(p0Pc.green||0,  p1Pc.green||0,  p0mc.green||0,  p1mc.green||0,  'Greens') +
-      accuracyRow(p0Pc.brown||0,  p1Pc.brown||0,  p0mc.brown||0,  p1mc.brown||0,  'Browns') +
-      accuracyRow(p0Pc.blue||0,   p1Pc.blue||0,   p0mc.blue||0,   p1mc.blue||0,   'Blues') +
-      accuracyRow(p0Pc.pink||0,   p1Pc.pink||0,   p0mc.pink||0,   p1mc.pink||0,   'Pinks') +
-      accuracyRow(p0Pc.black||0,  p1Pc.black||0,  p0mc.black||0,  p1mc.black||0,  'Blacks') +
+      colorAccRow(p0Pc.red||0,    p1Pc.red||0,    p0mc.red||0,    p1mc.red||0,    'Reds') +
+      colorAccRow(p0Pc.yellow||0, p1Pc.yellow||0, p0mc.yellow||0, p1mc.yellow||0, 'Yellows') +
+      colorAccRow(p0Pc.green||0,  p1Pc.green||0,  p0mc.green||0,  p1mc.green||0,  'Greens') +
+      colorAccRow(p0Pc.brown||0,  p1Pc.brown||0,  p0mc.brown||0,  p1mc.brown||0,  'Browns') +
+      colorAccRow(p0Pc.blue||0,   p1Pc.blue||0,   p0mc.blue||0,   p1mc.blue||0,   'Blues') +
+      colorAccRow(p0Pc.pink||0,   p1Pc.pink||0,   p0mc.pink||0,   p1mc.pink||0,   'Pinks') +
+      colorAccRow(p0Pc.black||0,  p1Pc.black||0,  p0mc.black||0,  p1mc.black||0,  'Blacks') +
       head('Misses & Safety') +
       pctRow(p0s.missEasy||0,   p1s.missEasy||0,   p0Pots, p1Pots, 'Easy misses',   true) +
       pctRow(p0s.missMedium||0, p1s.missMedium||0, p0Pots, p1Pots, 'Medium misses', true) +
