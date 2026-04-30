@@ -44,8 +44,8 @@ let state = {
   visitScore: 0,
   // Per-frame stats accumulator
   frameStats: {
-    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, potCount:0, visitTimeMs:0 },
-    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, potCount:0, visitTimeMs:0 },
+    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, potCount:0, visitTimeMs:0, pottedByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0} },
+    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, potCount:0, visitTimeMs:0, pottedByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0} },
   },
   // Completed frames saved for history
   completedFrames: [],
@@ -98,8 +98,8 @@ function resetFrameState(){
   state.players[0].score = 0; state.players[0].currentBreak = 0;
   state.players[1].score = 0; state.players[1].currentBreak = 0;
   state.frameStats = {
-    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, potCount:0, visitTimeMs:0 },
-    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, potCount:0, visitTimeMs:0 },
+    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, potCount:0, visitTimeMs:0, pottedByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0} },
+    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, potCount:0, visitTimeMs:0, pottedByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0} },
   };
   state._visitStartMs = Date.now();
 }
@@ -202,6 +202,8 @@ function renderFrameLog(){
     if(e.type === 'foul')       cls += ' log-foul';
     else if(e.type === 'miss')  cls += ' log-miss';
     else if(e.type === 'correction') cls += ' log-correction';
+    if(e.playerIdx === 0) cls += ' log-p0';
+    else if(e.playerIdx === 1) cls += ' log-p1';
     return '<div class="' + cls + '">' +
       '<span class="log-who">' + esc(e.player) + '</span> ' +
       '<span class="log-desc">' + esc(e.desc) + '</span>' +
@@ -211,8 +213,8 @@ function renderFrameLog(){
   box.scrollTop = box.scrollHeight;
 }
 
-function addLog(type, player, desc, pts){
-  state.frameLog.push({ type, player, desc, pts });
+function addLog(type, player, desc, pts, playerIdx){
+  state.frameLog.push({ type, player, desc, pts, playerIdx });
 }
 
 // ─── Potting ──────────────────────────────────────────────────────────────────
@@ -234,9 +236,11 @@ function potBall(ball){
 
   state.frameStats[sk].totalPotted += ball.value;
   state.frameStats[sk].potCount++;
+  if(!state.frameStats[sk].pottedByColor) state.frameStats[sk].pottedByColor = {red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0};
+  state.frameStats[sk].pottedByColor[ball.id]++;
   if(ball.id === 'red') state.frameStats[sk].redsPotsCount++;
 
-  addLog('pot', pl.name, 'potted ' + ball.name, ball.value);
+  addLog('pot', pl.name, 'potted ' + ball.name, ball.value, cp);
 
   // Advance phase
   if(state.awaiting === 'red'){
@@ -254,15 +258,14 @@ function potBall(ball){
     }
   } else if(state.awaiting === 'sequence'){
     state.colorSeqIdx++;
-    if(state.colorSeqIdx >= COLOR_SEQ.length){
-      // Last ball potted — frame over
-      renderGame();
-      endFrameAutomatically();
-      return;
-    }
   }
 
   renderGame();
+
+  // Snooker rule: frame ends when the final black is potted (last ball in sequence).
+  if(state.awaiting === 'sequence' && state.colorSeqIdx >= COLOR_SEQ.length){
+    endFrameAutomatically();
+  }
 }
 
 // ─── Undo ─────────────────────────────────────────────────────────────────────
@@ -283,8 +286,8 @@ function snapshot(){
     colorSeqIdx: state.colorSeqIdx,
     visitScore:  state.visitScore,
     frameStats: {
-      p0:{...state.frameStats.p0, breaks:[...state.frameStats.p0.breaks]},
-      p1:{...state.frameStats.p1, breaks:[...state.frameStats.p1.breaks]},
+      p0:{...state.frameStats.p0, breaks:[...state.frameStats.p0.breaks], pottedByColor:{...(state.frameStats.p0.pottedByColor||{})}},
+      p1:{...state.frameStats.p1, breaks:[...state.frameStats.p1.breaks], pottedByColor:{...(state.frameStats.p1.pottedByColor||{})}},
     },
   };
 }
@@ -297,8 +300,8 @@ function restoreSnapshot(s){
   state.colorSeqIdx    = s.colorSeqIdx;
   state.visitScore     = s.visitScore;
   state.frameStats = {
-    p0:{...s.frameStats.p0, breaks:[...s.frameStats.p0.breaks]},
-    p1:{...s.frameStats.p1, breaks:[...s.frameStats.p1.breaks]},
+    p0:{...s.frameStats.p0, breaks:[...s.frameStats.p0.breaks], pottedByColor:{...(s.frameStats.p0.pottedByColor||{})}},
+    p1:{...s.frameStats.p1, breaks:[...s.frameStats.p1.breaks], pottedByColor:{...(s.frameStats.p1.pottedByColor||{})}},
   };
 }
 
@@ -359,12 +362,23 @@ function commitMiss(cp, difficulty){
   else if(difficulty === 'hard')   state.frameStats[sk].missHard++;
 
   const label = diffLabel[difficulty] || 'Miss';
-  addLog('miss', state.players[cp].name, label, undefined);
+  addLog('miss', state.players[cp].name, label, undefined, cp);
 
   state.players[cp].currentBreak = 0;
   if(state.awaiting === 'color'){
     if(state.redsRemaining === 0){ state.awaiting = 'sequence'; state.colorSeqIdx = 0; }
     else state.awaiting = 'red';
+  }
+  // Snooker rule: if a miss occurs when only the black is left (sequence idx 5)
+  // and scores are not equal, the frame ends.
+  if(state.awaiting === 'sequence' && state.colorSeqIdx === COLOR_SEQ.length - 1){
+    const s0 = state.players[0].score, s1 = state.players[1].score;
+    if(s0 !== s1){
+      el('miss-picker').classList.add('hidden');
+      renderGame();
+      endFrameAutomatically();
+      return;
+    }
   }
   state.currentPlayer = 1 - cp;
   state.players[state.currentPlayer].currentBreak = 0;
@@ -411,7 +425,11 @@ function commitVisit(countAsVisit){
 
 // ─── Fouls ────────────────────────────────────────────────────────────────────
 
-function showFoulPanel(){ el('foul-panel').classList.remove('hidden'); }
+function showFoulPanel(){
+  const fp = el('foul-panel');
+  if(!fp.classList.contains('hidden')){ fp.classList.add('hidden'); return; }
+  fp.classList.remove('hidden');
+}
 function hideFoulPanel() { el('foul-panel').classList.add('hidden'); }
 
 function applyFoul(value){
@@ -425,7 +443,7 @@ function applyFoul(value){
 
   state.players[opp].score += value;
   state.frameStats[sk].fouls++;
-  addLog('foul', state.players[cp].name, 'foul — ' + value + ' pts awarded to ' + state.players[opp].name, undefined);
+  addLog('foul', state.players[cp].name, 'foul — ' + value + ' pts to ' + state.players[opp].name, value, cp);
 
   state.players[cp].currentBreak = 0;
   state.currentPlayer = opp;
@@ -525,6 +543,60 @@ function finaliseFrame(winner){
 
 // ─── Frame summary overlay ────────────────────────────────────────────────────
 
+// Returns categorized stats HTML for a player vs player comparison.
+// p0s, p1s are stat objects, p0Score/p1Score are scores, p0Best/p1Best best breaks.
+function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Best){
+  const avgB = bs => bs && bs.length ? Math.round(bs.reduce((a,b)=>a+b,0)/bs.length) : 0;
+  const p0b = (p0s.breaks)||[], p1b = (p1s.breaks)||[];
+  const sp0 = (p0s.visits||0) > 0 ? Math.round((p0s.scoringVisits||0)/p0s.visits*100) : 0;
+  const sp1 = (p1s.visits||0) > 0 ? Math.round((p1s.scoringVisits||0)/p1s.visits*100) : 0;
+  const p0Pots = p0s.potCount || 0, p1Pots = p1s.potCount || 0;
+  const p0Pc = p0s.pottedByColor || {}, p1Pc = p1s.pottedByColor || {};
+
+  const sr = (v0, v1, lbl, loWins) => {
+    const n0 = parseFloat(v0), n1 = parseFloat(v1);
+    const w0c = !loWins ? (n0 > n1 ? ' sr-win' : '') : (n0 < n1 ? ' sr-win' : '');
+    const w1c = !loWins ? (n1 > n0 ? ' sr-win' : '') : (n1 < n0 ? ' sr-win' : '');
+    return '<div class="stat-row"><span class="sr-val'+w0c+'">'+v0+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+v1+'</span></div>';
+  };
+  const pctRow = (n0, n1, t0, t1, lbl, loWins) => {
+    const fmt = (n, t) => t > 0 ? n + ' (' + Math.round(n*100/t) + '%)' : String(n);
+    const w0c = !loWins ? (n0 > n1 ? ' sr-win' : '') : (n0 < n1 ? ' sr-win' : '');
+    const w1c = !loWins ? (n1 > n0 ? ' sr-win' : '') : (n1 < n0 ? ' sr-win' : '');
+    return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0,t0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1,t1)+'</span></div>';
+  };
+  const head = (label) => '<div class="stat-section">'+label+'</div>';
+
+  return '<div class="card-names-row"><span>'+esc(p0Name)+'</span><span></span><span>'+esc(p1Name)+'</span></div>' +
+    '<div class="card-stats">' +
+      head('Score') +
+      sr(p0Score||0, p1Score||0, 'Total points') +
+      head('Breaks') +
+      sr(p0Best||p0s.highestBreak||0, p1Best||p1s.highestBreak||0, 'Best break') +
+      sr(avgB(p0b), avgB(p1b), 'Avg break') +
+      sr(p0b.filter(b=>b>=100).length, p1b.filter(b=>b>=100).length, '100+ breaks') +
+      sr(p0b.filter(b=>b>=50&&b<100).length, p1b.filter(b=>b>=50&&b<100).length, '50+ breaks') +
+      head('Visits') +
+      sr((p0s.visits||0)+' ('+fmtTime(p0s.visitTimeMs||0)+')', (p1s.visits||0)+' ('+fmtTime(p1s.visitTimeMs||0)+')', 'Visits') +
+      sr(sp0+'%', sp1+'%', 'Scoring visit %') +
+      head('Pots') +
+      sr(p0Pots, p1Pots, 'Total shots') +
+      pctRow(p0Pc.red||0,    p1Pc.red||0,    p0Pots, p1Pots, 'Reds') +
+      pctRow(p0Pc.yellow||0, p1Pc.yellow||0, p0Pots, p1Pots, 'Yellows') +
+      pctRow(p0Pc.green||0,  p1Pc.green||0,  p0Pots, p1Pots, 'Greens') +
+      pctRow(p0Pc.brown||0,  p1Pc.brown||0,  p0Pots, p1Pots, 'Browns') +
+      pctRow(p0Pc.blue||0,   p1Pc.blue||0,   p0Pots, p1Pots, 'Blues') +
+      pctRow(p0Pc.pink||0,   p1Pc.pink||0,   p0Pots, p1Pots, 'Pinks') +
+      pctRow(p0Pc.black||0,  p1Pc.black||0,  p0Pots, p1Pots, 'Blacks') +
+      head('Misses') +
+      pctRow(p0s.missEasy||0,   p1s.missEasy||0,   p0Pots, p1Pots, 'Easy misses',   true) +
+      pctRow(p0s.missMedium||0, p1s.missMedium||0, p0Pots, p1Pots, 'Medium misses', true) +
+      pctRow(p0s.missHard||0,   p1s.missHard||0,   p0Pots, p1Pots, 'Hard misses',   true) +
+      head('Fouls') +
+      sr(p0s.fouls||0, p1s.fouls||0, 'Fouls', true) +
+    '</div>';
+}
+
 function showFrameSummary(f){
   const p  = state.players;
   const ov = el('frame-summary-overlay');
@@ -533,41 +605,7 @@ function showFrameSummary(f){
   el('fs-score').textContent = f.p0Score + ' – ' + f.p1Score;
   el('fs-frames').textContent = 'Frames: ' + p[0].frames + ' – ' + p[1].frames;
 
-  const p0s = f.stats.p0, p1s = f.stats.p1;
-  const avgB = sk => { const bs = f.stats[sk].breaks; return bs.length ? Math.round(bs.reduce((a,b)=>a+b,0)/bs.length) : 0; };
-  const sp0 = p0s.visits > 0 ? Math.round((p0s.scoringVisits||0) / p0s.visits * 100) : 0;
-  const sp1 = p1s.visits > 0 ? Math.round((p1s.scoringVisits||0) / p1s.visits * 100) : 0;
-  const fsr = (v0, v1, lbl, loWins) => {
-    const n0 = parseFloat(v0), n1 = parseFloat(v1);
-    const w0c = !loWins ? (n0 > n1 ? ' sr-win' : '') : (n0 < n1 ? ' sr-win' : '');
-    const w1c = !loWins ? (n1 > n0 ? ' sr-win' : '') : (n1 < n0 ? ' sr-win' : '');
-    return '<div class="stat-row"><span class="sr-val'+w0c+'">'+v0+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+v1+'</span></div>';
-  };
-  const p0Pots = p0s.potCount || 0, p1Pots = p1s.potCount || 0;
-  const mRow = (n0, n1, t0, t1, lbl) => {
-    const fmt = (n, t) => t > 0 ? n + ' (' + Math.round(n * 100 / t) + '%)' : String(n);
-    const w0c = n0 < n1 ? ' sr-win' : '';
-    const w1c = n1 < n0 ? ' sr-win' : '';
-    return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0,t0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1,t1)+'</span></div>';
-  };
-
-  el('fs-stats').innerHTML =
-    '<div class="card-names-row"><span>' + esc(p[0].name) + '</span><span></span><span>' + esc(p[1].name) + '</span></div>' +
-    '<div class="card-stats">' +
-    fsr(f.p0Score, f.p1Score, 'Total points') +
-    fsr(f.p0Best || p0s.highestBreak || 0, f.p1Best || p1s.highestBreak || 0, 'Best break') +
-    fsr(avgB('p0'), avgB('p1'), 'Avg break') +
-    fsr(p0s.breaks.filter(b=>b>=100).length, p1s.breaks.filter(b=>b>=100).length, '100+ breaks') +
-    fsr(p0s.breaks.filter(b=>b>=50&&b<100).length, p1s.breaks.filter(b=>b>=50&&b<100).length, '50+ breaks') +
-    fsr((p0s.visits||0) + ' (' + fmtTime(p0s.visitTimeMs||0) + ')', (p1s.visits||0) + ' (' + fmtTime(p1s.visitTimeMs||0) + ')', 'Visits') +
-    fsr(sp0+'%', sp1+'%', 'Scoring visit %') +
-    fsr(p0s.redsPotsCount||0, p1s.redsPotsCount||0, 'Reds potted') +
-    fsr(p0Pots, p1Pots, 'Total shots') +
-    fsr(p0s.fouls, p1s.fouls, 'Fouls', true) +
-    mRow(p0s.missEasy||0, p1s.missEasy||0, p0Pots, p1Pots, 'Easy misses') +
-    mRow(p0s.missMedium||0, p1s.missMedium||0, p0Pots, p1Pots, 'Medium misses') +
-    mRow(p0s.missHard||0, p1s.missHard||0, p0Pots, p1Pots, 'Hard misses') +
-    '</div>';
+  el('fs-stats').innerHTML = buildStatsHtml(p[0].name, p[1].name, f.stats.p0, f.stats.p1, f.p0Score, f.p1Score, f.p0Best, f.p1Best);
 
   ov.classList.remove('hidden');
 }
@@ -637,6 +675,8 @@ function saveMatch(){
     p1RedsPotted: cf.reduce((s,f)=>s+(f.stats.p1.redsPotsCount||0),0),
     p0VisitTimeMs: cf.reduce((s,f)=>s+(f.stats.p0.visitTimeMs||0),0),
     p1VisitTimeMs: cf.reduce((s,f)=>s+(f.stats.p1.visitTimeMs||0),0),
+    p0PottedByColor: cf.reduce((acc,f)=>{ const pc=(f.stats.p0.pottedByColor)||{}; for(const k in pc) acc[k]=(acc[k]||0)+pc[k]; return acc; }, {red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0}),
+    p1PottedByColor: cf.reduce((acc,f)=>{ const pc=(f.stats.p1.pottedByColor)||{}; for(const k in pc) acc[k]=(acc[k]||0)+pc[k]; return acc; }, {red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0}),
     frames:   cf,
   };
 
@@ -662,78 +702,54 @@ function renderHistory(){
   list.innerHTML = state.matchHistory.map((m,i) => {
     const w0 = m.winner === 0, w1 = m.winner === 1;
     const total = m.p0Frames + m.p1Frames;
+    const frames = m.frames || [];
 
-    // Build per-frame expandable blocks
-    const frameBreakdown = (() => {
-      const frames = m.frames || [];
-      if(!frames.length) return '';
-      const fsr2 = (v0,v1,lbl,loWins) => {
-        const n0=parseFloat(v0),n1=parseFloat(v1);
-        const w0c=!loWins?(n0>n1?' sr-win':''):(n0<n1?' sr-win':'');
-        const w1c=!loWins?(n1>n0?' sr-win':''):(n1<n0?' sr-win':'');
-        return '<div class="stat-row"><span class="sr-val'+w0c+'">'+v0+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+v1+'</span></div>';
-      };
-      const items = frames.map((f,fi) => {
-        const fw0 = f.winner === 0;
-        const winName = fw0 ? esc(m.p0Name) : esc(m.p1Name);
-        const p0s = (f.stats && f.stats.p0) || {};
-        const p1s = (f.stats && f.stats.p1) || {};
-        const p0b = p0s.breaks || [], p1b = p1s.breaks || [];
-        const avgB = bs => bs.length ? Math.round(bs.reduce((a,b)=>a+b,0)/bs.length) : 0;
-        const sp0 = p0s.visits > 0 ? Math.round((p0s.scoringVisits||0)/p0s.visits*100) : 0;
-        const sp1 = p1s.visits > 0 ? Math.round((p1s.scoringVisits||0)/p1s.visits*100) : 0;
-        const fp0Pots = p0s.potCount||0, fp1Pots = p1s.potCount||0;
-        const mRow2 = (n0, n1, t0, t1, lbl) => {
-          const fmt = (n, t) => t > 0 ? n + ' (' + Math.round(n*100/t) + '%)' : String(n);
-          const w0c = n0 < n1 ? ' sr-win' : '';
-          const w1c = n1 < n0 ? ' sr-win' : '';
-          return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0,t0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1,t1)+'</span></div>';
-        };
-        const key = i+'-'+fi;
-        const statsHtml =
-          '<div class="card-names-row"><span>'+esc(m.p0Name)+'</span><span></span><span>'+esc(m.p1Name)+'</span></div>'+
-          '<div class="card-stats">'+
-          fsr2(f.p0Score,f.p1Score,'Total points')+
-          fsr2(f.p0Best||p0s.highestBreak||0,f.p1Best||p1s.highestBreak||0,'Best break')+
-          fsr2(avgB(p0b),avgB(p1b),'Avg break')+
-          fsr2(p0b.filter(b=>b>=100).length,p1b.filter(b=>b>=100).length,'100+ breaks')+
-          fsr2(p0b.filter(b=>b>=50&&b<100).length,p1b.filter(b=>b>=50&&b<100).length,'50+ breaks')+
-          fsr2((p0s.visits||0)+' ('+fmtTime(p0s.visitTimeMs||0)+')',(p1s.visits||0)+' ('+fmtTime(p1s.visitTimeMs||0)+')','Visits')+
-          fsr2(sp0+'%',sp1+'%','Scoring visit %')+
-          fsr2(p0s.redsPotsCount||0,p1s.redsPotsCount||0,'Reds potted')+
-          fsr2(fp0Pots,fp1Pots,'Total shots')+
-          fsr2(p0s.fouls||0,p1s.fouls||0,'Fouls',true)+
-          mRow2(p0s.missEasy||0,p1s.missEasy||0,fp0Pots,fp1Pots,'Easy misses')+
-          mRow2(p0s.missMedium||0,p1s.missMedium||0,fp0Pots,fp1Pots,'Medium misses')+
-          mRow2(p0s.missHard||0,p1s.missHard||0,fp0Pots,fp1Pots,'Hard misses')+
-          '</div>';
-        return '<div class="frame-detail-item">'+
-          '<button class="btn-frame-detail" onclick="toggleFrameDetail(\''+key+'\')">'+
-            'Frame '+f.frameNum+' &mdash; '+winName+' wins &nbsp;'+f.p0Score+'&ndash;'+f.p1Score+
-          '</button>'+
-          '<div id="fdi-'+key+'" class="frame-detail-stats hidden">'+statsHtml+'</div>'+
+    // Build the per-frame stats list (all expanded together)
+    const frameItems = frames.map(f => {
+      const p0s = (f.stats && f.stats.p0) || {};
+      const p1s = (f.stats && f.stats.p1) || {};
+      const winName = f.winner === 0 ? esc(m.p0Name) : esc(m.p1Name);
+      return '<div class="frame-detail-item">'+
+          '<div class="frame-detail-title">Frame '+f.frameNum+' &mdash; '+winName+' wins &nbsp;'+f.p0Score+'&ndash;'+f.p1Score+'</div>'+
+          '<div class="frame-detail-stats">'+
+            buildStatsHtml(m.p0Name, m.p1Name, p0s, p1s, f.p0Score, f.p1Score, f.p0Best, f.p1Best)+
+          '</div>'+
         '</div>';
-      }).join('');
-      return '<div class="frame-breakdown">'+
-        '<button class="btn-frames-toggle" onclick="toggleFrames('+i+')">&#9658; Frames ('+frames.length+')</button>'+
-        '<div id="fd-'+i+'" class="frames-detail hidden">'+items+'</div>'+
-      '</div>';
-    })();
+    }).join('');
 
-    const sr = (v0,v1,lbl,loWins) => {
-      const w0c = !loWins ? (v0>v1?' sr-win':'') : (v0<v1?' sr-win':'');
-      const w1c = !loWins ? (v1>v0?' sr-win':'') : (v1<v0?' sr-win':'');
-      return '<div class="stat-row">'+
-        '<span class="sr-val'+w0c+'">'+v0+'</span>'+
-        '<span class="sr-lbl">'+lbl+'</span>'+
-        '<span class="sr-val'+w1c+'">'+v1+'</span>'+
-      '</div>';
+    const frameBreakdown = frames.length ? '<div class="frame-breakdown">'+
+      '<button class="btn-frames-toggle" onclick="toggleFrames('+i+')">&#9658; Frames ('+frames.length+')</button>'+
+      '<div id="fd-'+i+'" class="frames-detail hidden">'+frameItems+'</div>'+
+    '</div>' : '';
+
+    // Aggregate pseudo-stat objects so buildStatsHtml works at match level
+    const aggP0 = {
+      breaks: frames.flatMap(f => (f.stats && f.stats.p0 && f.stats.p0.breaks) || []),
+      highestBreak: m.p0Best||0,
+      visits: m.p0Visits||0,
+      scoringVisits: m.p0ScoringVisits||0,
+      visitTimeMs: m.p0VisitTimeMs||0,
+      potCount: m.p0PotCount||0,
+      pottedByColor: m.p0PottedByColor || {},
+      missEasy: m.p0MissEasy||0,
+      missMedium: m.p0MissMedium||0,
+      missHard: m.p0MissHard||0,
+      fouls: m.p0Fouls||0,
+      redsPotsCount: m.p0RedsPotted||0,
     };
-    const mRowSr = (n0, n1, t0, t1, lbl) => {
-      const fmt = (n, t) => t > 0 ? n + ' (' + Math.round(n*100/t) + '%)' : String(n);
-      const w0c = n0 < n1 ? ' sr-win' : '';
-      const w1c = n1 < n0 ? ' sr-win' : '';
-      return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0,t0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1,t1)+'</span></div>';
+    const aggP1 = {
+      breaks: frames.flatMap(f => (f.stats && f.stats.p1 && f.stats.p1.breaks) || []),
+      highestBreak: m.p1Best||0,
+      visits: m.p1Visits||0,
+      scoringVisits: m.p1ScoringVisits||0,
+      visitTimeMs: m.p1VisitTimeMs||0,
+      potCount: m.p1PotCount||0,
+      pottedByColor: m.p1PottedByColor || {},
+      missEasy: m.p1MissEasy||0,
+      missMedium: m.p1MissMedium||0,
+      missHard: m.p1MissHard||0,
+      fouls: m.p1Fouls||0,
+      redsPotsCount: m.p1RedsPotted||0,
     };
 
     return '<div class="history-card" id="hcard-'+i+'">'+
@@ -743,22 +759,7 @@ function renderHistory(){
         '<span class="card-score">'+m.p0Frames+'&thinsp;–&thinsp;'+m.p1Frames+'</span>'+
         '<span class="card-player p2 '+(w1?'winner':'')+'">'+esc(m.p1Name)+'</span>'+
       '</div>'+
-      '<div class="card-names-row"><span>'+esc(m.p0Name)+'</span><span></span><span>'+esc(m.p1Name)+'</span></div>'+
-      '<div class="card-stats">'+
-        sr(m.p0Total||0, m.p1Total||0, 'Total points')+
-        sr(m.p0Best||0,  m.p1Best||0,  'Best break')+
-        sr(m.p0Avg||0,   m.p1Avg||0,   'Avg break')+
-        sr(m.p0Centuries||0, m.p1Centuries||0, '100+ breaks')+
-        sr(m.p0Fifties||0,   m.p1Fifties||0,   '50+ breaks')+
-        sr((m.p0Visits||0)+' ('+fmtTime(m.p0VisitTimeMs||0)+')', (m.p1Visits||0)+' ('+fmtTime(m.p1VisitTimeMs||0)+')', 'Visits')+
-        sr(((m.p0Visits||0)>0?Math.round((m.p0ScoringVisits||0)*100/(m.p0Visits||1))+'%':'0%'), ((m.p1Visits||0)>0?Math.round((m.p1ScoringVisits||0)*100/(m.p1Visits||1))+'%':'0%'), 'Scoring visit %')+
-        sr(m.p0RedsPotted||0, m.p1RedsPotted||0, 'Reds potted')+
-        sr(m.p0PotCount||0, m.p1PotCount||0, 'Total shots')+
-        sr(m.p0Fouls||0, m.p1Fouls||0, 'Fouls', true)+
-        mRowSr(m.p0MissEasy||0, m.p1MissEasy||0, m.p0PotCount||0, m.p1PotCount||0, 'Easy misses')+
-        mRowSr(m.p0MissMedium||0, m.p1MissMedium||0, m.p0PotCount||0, m.p1PotCount||0, 'Medium misses')+
-        mRowSr(m.p0MissHard||0, m.p1MissHard||0, m.p0PotCount||0, m.p1PotCount||0, 'Hard misses')+
-      '</div>'+
+      buildStatsHtml(m.p0Name, m.p1Name, aggP0, aggP1, m.p0Total||0, m.p1Total||0, m.p0Best||0, m.p1Best||0) +
       frameBreakdown+
     '</div>';
   }).join('');
@@ -821,6 +822,7 @@ function applyCorrection(type){
   const scoreElId = cp === 0 ? 'p1-score' : 'p2-score';
   el(scoreElId).textContent = p[cp].score;
   el('pts-remaining').textContent = ptsLeft() + ' pts left';
+  el('phase-label').textContent = phaseDesc();
   renderFrameLog();
 }
 
