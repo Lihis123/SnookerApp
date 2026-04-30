@@ -37,8 +37,8 @@ let state = {
   visitScore: 0,
   // Per-frame stats accumulator
   frameStats: {
-    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0 },
-    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0 },
+    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0 },
+    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0 },
   },
   // Completed frames saved for history
   completedFrames: [],
@@ -91,8 +91,8 @@ function resetFrameState(){
   state.players[0].score = 0; state.players[0].currentBreak = 0;
   state.players[1].score = 0; state.players[1].currentBreak = 0;
   state.frameStats = {
-    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0 },
-    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0 },
+    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0 },
+    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0 },
   };
 }
 
@@ -164,7 +164,8 @@ function renderBalls(){
 
 function isBallOn(id){
   if(state.awaiting === 'red')      return id === 'red';
-  if(state.awaiting === 'color')    return id !== 'red';
+  // During colour phase, extra reds may also be potted (multiple reds in one shot)
+  if(state.awaiting === 'color')    return id !== 'red' || state.redsRemaining > 0;
   if(state.awaiting === 'sequence') return id === COLOR_SEQ[state.colorSeqIdx];
   return false;
 }
@@ -176,9 +177,9 @@ function renderFrameLog(){
   if(!box) return;
   box.innerHTML = state.frameLog.map(e => {
     let cls = 'log-entry';
-    if(e.type === 'foul') cls += ' log-foul';
-    else if(e.type === 'miss') cls += ' log-miss';
-    else if(e.type === 'break') cls += ' log-break';
+    if(e.type === 'foul')       cls += ' log-foul';
+    else if(e.type === 'miss')  cls += ' log-miss';
+    else if(e.type === 'correction') cls += ' log-correction';
     return '<div class="' + cls + '">' +
       '<span class="log-who">' + esc(e.player) + '</span> ' +
       '<span class="log-desc">' + esc(e.desc) + '</span>' +
@@ -216,7 +217,10 @@ function potBall(ball){
     state.redsRemaining--;
     state.awaiting = 'color';
   } else if(state.awaiting === 'color'){
-    if(state.redsRemaining === 0){
+    if(ball.id === 'red'){
+      // Another red potted on the same shot — stay in colour-nomination phase
+      state.redsRemaining--;
+    } else if(state.redsRemaining === 0){
       state.awaiting    = 'sequence';
       state.colorSeqIdx = 0;
     } else {
@@ -299,10 +303,14 @@ function switchPlayer(){
   renderGame();
 }
 
-function commitVisit(){
+function commitVisit(countAsVisit){
   const cp  = state.currentPlayer;
   const sk  = cp === 0 ? 'p0' : 'p1';
   const val = state.visitScore;
+  if(countAsVisit !== false){
+    state.frameStats[sk].visits++;
+    if(val > 0) state.frameStats[sk].scoringVisits++;
+  }
   if(val > 0){
     state.frameStats[sk].breaks.push(val);
     if(val > state.frameStats[sk].highestBreak) state.frameStats[sk].highestBreak = val;
@@ -360,7 +368,7 @@ function confirmConcede(){
 }
 
 function resolveFrame(forcedWinner){
-  commitVisit();
+  commitVisit(false); // flush break without counting as a new visit
   const p = state.players;
   let winner;
   if(forcedWinner !== undefined){
@@ -425,34 +433,30 @@ function showFrameSummary(f){
   el('fs-score').textContent = f.p0Score + ' – ' + f.p1Score;
   el('fs-frames').textContent = 'Frames: ' + p[0].frames + ' – ' + p[1].frames;
 
-  // stat rows
-  const rows = [
-    ['Highest break', f.p0Best || 0, f.p1Best || 0],
-    ['Total points',  f.p0Score, f.p1Score],
-    ['Visits (breaks)', f.stats.p0.breaks.length, f.stats.p1.breaks.length],
-    ['Reds potted',   f.stats.p0.redsPotsCount || 0, f.stats.p1.redsPotsCount || 0],
-    ['Fouls',         f.stats.p0.fouls, f.stats.p1.fouls],
-  ];
-
-  const avg = sk => {
-    const bs = f.stats[sk].breaks;
-    return bs.length ? Math.round(bs.reduce((a,b)=>a+b,0)/bs.length) : 0;
+  const p0s = f.stats.p0, p1s = f.stats.p1;
+  const avgB = sk => { const bs = f.stats[sk].breaks; return bs.length ? Math.round(bs.reduce((a,b)=>a+b,0)/bs.length) : 0; };
+  const sp0 = p0s.visits > 0 ? Math.round((p0s.scoringVisits||0) / p0s.visits * 100) : 0;
+  const sp1 = p1s.visits > 0 ? Math.round((p1s.scoringVisits||0) / p1s.visits * 100) : 0;
+  const fsr = (v0, v1, lbl, loWins) => {
+    const n0 = parseFloat(v0), n1 = parseFloat(v1);
+    const w0c = !loWins ? (n0 > n1 ? ' sr-win' : '') : (n0 < n1 ? ' sr-win' : '');
+    const w1c = !loWins ? (n1 > n0 ? ' sr-win' : '') : (n1 < n0 ? ' sr-win' : '');
+    return '<div class="stat-row"><span class="sr-val'+w0c+'">'+v0+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+v1+'</span></div>';
   };
-  rows.push(['Avg break', avg('p0'), avg('p1')]);
 
   el('fs-stats').innerHTML =
-    '<div class="fs-names"><span>' + esc(p[0].name) + '</span><span></span><span>' + esc(p[1].name) + '</span></div>' +
-    rows.map(([lbl,v0,v1]) => {
-      const w0 = v0 > v1 ? ' sr-win' : '';
-      const w1 = v1 > v0 ? ' sr-win' : '';
-      // For fouls, lower is better — don't highlight
-      const nohigh = lbl === 'Fouls';
-      return '<div class="stat-row">' +
-        '<span class="sr-val' + (nohigh ? '' : w0) + '">' + v0 + '</span>' +
-        '<span class="sr-lbl">' + lbl + '</span>' +
-        '<span class="sr-val' + (nohigh ? '' : w1) + '">' + v1 + '</span>' +
-      '</div>';
-    }).join('');
+    '<div class="card-names-row"><span>' + esc(p[0].name) + '</span><span></span><span>' + esc(p[1].name) + '</span></div>' +
+    '<div class="card-stats">' +
+    fsr(f.p0Score, f.p1Score, 'Total points') +
+    fsr(f.p0Best || p0s.highestBreak || 0, f.p1Best || p1s.highestBreak || 0, 'Best break') +
+    fsr(avgB('p0'), avgB('p1'), 'Avg break') +
+    fsr(p0s.breaks.filter(b=>b>=100).length, p1s.breaks.filter(b=>b>=100).length, '100+ breaks') +
+    fsr(p0s.breaks.filter(b=>b>=50&&b<100).length, p1s.breaks.filter(b=>b>=50&&b<100).length, '50+ breaks') +
+    fsr(p0s.visits||0, p1s.visits||0, 'Visits') +
+    fsr(sp0+'%', sp1+'%', 'Scoring visit %') +
+    fsr(p0s.redsPotsCount||0, p1s.redsPotsCount||0, 'Reds potted') +
+    fsr(p0s.fouls, p1s.fouls, 'Fouls', true) +
+    '</div>';
 
   ov.classList.remove('hidden');
 }
@@ -534,17 +538,51 @@ function renderHistory(){
     const w0 = m.winner === 0, w1 = m.winner === 1;
     const total = m.p0Frames + m.p1Frames;
 
-    const frameRows = (m.frames||[]).map(f => {
-      const fw0 = f.winner === 0;
-      return '<tr>' +
-        '<td class="frd-num">F'+f.frameNum+'</td>'+
-        '<td class="frd-score'+(fw0?' frd-winner':'')+'">'+f.p0Score+'</td>'+
-        '<td class="frd-vs">–</td>'+
-        '<td class="frd-score'+(!fw0?' frd-winner':'')+'">'+f.p1Score+'</td>'+
-        '<td class="frd-break">'+(f.p0Best||'–')+'</td>'+
-        '<td class="frd-break">'+(f.p1Best||'–')+'</td>'+
-        '</tr>';
-    }).join('');
+    // Build per-frame expandable blocks
+    const frameBreakdown = (() => {
+      const frames = m.frames || [];
+      if(!frames.length) return '';
+      const fsr2 = (v0,v1,lbl,loWins) => {
+        const n0=parseFloat(v0),n1=parseFloat(v1);
+        const w0c=!loWins?(n0>n1?' sr-win':''):(n0<n1?' sr-win':'');
+        const w1c=!loWins?(n1>n0?' sr-win':''):(n1<n0?' sr-win':'');
+        return '<div class="stat-row"><span class="sr-val'+w0c+'">'+v0+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+v1+'</span></div>';
+      };
+      const items = frames.map((f,fi) => {
+        const fw0 = f.winner === 0;
+        const winName = fw0 ? esc(m.p0Name) : esc(m.p1Name);
+        const p0s = (f.stats && f.stats.p0) || {};
+        const p1s = (f.stats && f.stats.p1) || {};
+        const p0b = p0s.breaks || [], p1b = p1s.breaks || [];
+        const avgB = bs => bs.length ? Math.round(bs.reduce((a,b)=>a+b,0)/bs.length) : 0;
+        const sp0 = p0s.visits > 0 ? Math.round((p0s.scoringVisits||0)/p0s.visits*100) : 0;
+        const sp1 = p1s.visits > 0 ? Math.round((p1s.scoringVisits||0)/p1s.visits*100) : 0;
+        const key = i+'-'+fi;
+        const statsHtml =
+          '<div class="card-names-row"><span>'+esc(m.p0Name)+'</span><span></span><span>'+esc(m.p1Name)+'</span></div>'+
+          '<div class="card-stats">'+
+          fsr2(f.p0Score,f.p1Score,'Total points')+
+          fsr2(f.p0Best||p0s.highestBreak||0,f.p1Best||p1s.highestBreak||0,'Best break')+
+          fsr2(avgB(p0b),avgB(p1b),'Avg break')+
+          fsr2(p0b.filter(b=>b>=100).length,p1b.filter(b=>b>=100).length,'100+ breaks')+
+          fsr2(p0b.filter(b=>b>=50&&b<100).length,p1b.filter(b=>b>=50&&b<100).length,'50+ breaks')+
+          fsr2(p0s.visits||0,p1s.visits||0,'Visits')+
+          fsr2(sp0+'%',sp1+'%','Scoring visit %')+
+          fsr2(p0s.redsPotsCount||0,p1s.redsPotsCount||0,'Reds potted')+
+          fsr2(p0s.fouls||0,p1s.fouls||0,'Fouls',true)+
+          '</div>';
+        return '<div class="frame-detail-item">'+
+          '<button class="btn-frame-detail" onclick="toggleFrameDetail(\''+key+'\')">'+
+            'Frame '+f.frameNum+' &mdash; '+winName+' wins &nbsp;'+f.p0Score+'&ndash;'+f.p1Score+
+          '</button>'+
+          '<div id="fdi-'+key+'" class="frame-detail-stats hidden">'+statsHtml+'</div>'+
+        '</div>';
+      }).join('');
+      return '<div class="frame-breakdown">'+
+        '<button class="btn-frames-toggle" onclick="toggleFrames('+i+')">&#9658; Frames ('+frames.length+')</button>'+
+        '<div id="fd-'+i+'" class="frames-detail hidden">'+items+'</div>'+
+      '</div>';
+    })();
 
     const sr = (v0,v1,lbl,loWins) => {
       const w0c = !loWins ? (v0>v1?' sr-win':'') : (v0<v1?' sr-win':'');
@@ -572,14 +610,7 @@ function renderHistory(){
         sr(m.p0Fifties||0,   m.p1Fifties||0,   '50+ breaks')+
         sr(m.p0Fouls||0, m.p1Fouls||0, 'Fouls', true)+
       '</div>'+
-      (frameRows?'<div class="frame-breakdown">'+
-        '<button class="btn-frames-toggle" onclick="toggleFrames('+i+')">&#9658; Frame by frame</button>'+
-        '<div id="fd-'+i+'" class="frames-detail hidden">'+
-          '<table class="frames-table"><thead><tr>'+
-            '<th></th><th class="ft-p0">'+esc(m.p0Name)+'</th><th></th><th>'+esc(m.p1Name)+'</th>'+
-            '<th class="ft-p0">Best</th><th>Best</th>'+
-          '</tr></thead><tbody>'+frameRows+'</tbody></table>'+
-        '</div></div>':'')+
+      frameBreakdown+
     '</div>';
   }).join('');
 }
@@ -589,7 +620,56 @@ function toggleFrames(i){
   const b = el('hcard-'+i).querySelector('.btn-frames-toggle');
   if(!d) return;
   const h = d.classList.toggle('hidden');
-  b.textContent = (h?'\u25B8':'\u25BE')+' Frame by frame';
+  b.innerHTML = (h ? '&#9658;' : '&#9660;') + ' Frames (' + (d.children.length) + ')';
+}
+
+function toggleFrameDetail(key){
+  const d = el('fdi-'+key);
+  if(!d) return;
+  const btn = d.previousElementSibling;
+  const nowHidden = d.classList.toggle('hidden');
+  if(btn) btn.classList.toggle('open', !nowHidden);
+}
+
+// ─── Frame correction ─────────────────────────────────────────────────────────
+
+function showCorrectPanel(){
+  el('corr-p0-name').textContent = state.players[0].name;
+  el('corr-p1-name').textContent = state.players[1].name;
+  el('corr-reds').textContent    = state.redsRemaining;
+  el('corr-pts').value           = 1;
+  el('correct-panel').classList.remove('hidden');
+}
+function hideCorrectPanel(){ el('correct-panel').classList.add('hidden'); }
+
+function applyCorrection(type){
+  const pts = Math.max(1, parseInt((el('corr-pts') || {}).value) || 1);
+  const p   = state.players;
+  let desc  = '';
+  if(type === 'add-red' && state.redsRemaining < 15){
+    state.redsRemaining++;
+    el('corr-reds').textContent = state.redsRemaining;
+    desc = 'Added 1 red (' + state.redsRemaining + ' on table)';
+  } else if(type === 'remove-red' && state.redsRemaining > 0){
+    state.redsRemaining--;
+    el('corr-reds').textContent = state.redsRemaining;
+    desc = 'Removed 1 red (' + state.redsRemaining + ' on table)';
+  } else if(type === 'add-pts-0'){
+    p[0].score += pts;
+    desc = '+' + pts + ' pts to ' + p[0].name + ' (now ' + p[0].score + ')';
+  } else if(type === 'remove-pts-0'){
+    p[0].score = Math.max(0, p[0].score - pts);
+    desc = '-' + pts + ' pts from ' + p[0].name + ' (now ' + p[0].score + ')';
+  } else if(type === 'add-pts-1'){
+    p[1].score += pts;
+    desc = '+' + pts + ' pts to ' + p[1].name + ' (now ' + p[1].score + ')';
+  } else if(type === 'remove-pts-1'){
+    p[1].score = Math.max(0, p[1].score - pts);
+    desc = '-' + pts + ' pts from ' + p[1].name + ' (now ' + p[1].score + ')';
+  }
+  if(desc) addLog('correction', 'Correction', desc, undefined);
+  hideCorrectPanel();
+  renderGame();
 }
 
 function confirmClearHistory(){
