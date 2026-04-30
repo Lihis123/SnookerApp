@@ -99,7 +99,8 @@ function updateVisitTimer(){
   const elt = el('visit-timer');
   if(!elt) return;
   const start = state._visitStartMs || Date.now();
-  elt.textContent = fmtTime(Date.now() - start);
+  const diff = Date.now() - start;
+  elt.textContent = fmtTime(diff < 0 ? 0 : diff);
 }
 
 function resetFrameState(){
@@ -203,7 +204,7 @@ function renderBalls(){
 }
 
 function isBallOn(id){
-  if(state.awaiting === 'red')      return id === 'red';
+  if(state.awaiting === 'red')      return id === 'red' && state.redsRemaining > 0;
   // During colour phase, extra reds may also be potted (multiple reds in one shot)
   if(state.awaiting === 'color')    return id !== 'red' || state.redsRemaining > 0;
   if(state.awaiting === 'sequence') return id === COLOR_SEQ[state.colorSeqIdx];
@@ -249,6 +250,9 @@ function addLog(type, player, desc, pts, playerIdx, ballId){
 function potBall(ball){
   // Guard against stale click events (e.g. rapid double-clicks)
   if(!isBallOn(ball.id)) return;
+  // Cancel any open miss picker / panels — user is potting instead
+  cancelMissPicker();
+  hideFoulPanel();
 
   const cp  = state.currentPlayer;
   const pl  = state.players[cp];
@@ -299,8 +303,11 @@ function potBall(ball){
 
 function undoLastBall(){
   if(!state.undoStack.length) return;
+  // Always cancel any pending UI (miss picker, panels) on undo
+  cancelMissPicker();
+  hideFoulPanel();
+  hideCorrectPanel();
   restoreSnapshot(state.undoStack.pop());
-  if(state.frameLog.length) state.frameLog.pop();
   renderGame();
 }
 
@@ -312,6 +319,8 @@ function snapshot(){
     awaiting:    state.awaiting,
     colorSeqIdx: state.colorSeqIdx,
     visitScore:  state.visitScore,
+    _visitStartMs: state._visitStartMs,
+    frameLog:    state.frameLog.map(e=>({...e})),
     frameStats: {
       p0:{...state.frameStats.p0, breaks:[...state.frameStats.p0.breaks], pottedByColor:{...(state.frameStats.p0.pottedByColor||{})}},
       p1:{...state.frameStats.p1, breaks:[...state.frameStats.p1.breaks], pottedByColor:{...(state.frameStats.p1.pottedByColor||{})}},
@@ -326,6 +335,8 @@ function restoreSnapshot(s){
   state.awaiting       = s.awaiting;
   state.colorSeqIdx    = s.colorSeqIdx;
   state.visitScore     = s.visitScore;
+  state._visitStartMs  = s._visitStartMs || Date.now();
+  state.frameLog       = (s.frameLog || []).map(e=>({...e}));
   state.frameStats = {
     p0:{...s.frameStats.p0, breaks:[...s.frameStats.p0.breaks], pottedByColor:{...(s.frameStats.p0.pottedByColor||{})}},
     p1:{...s.frameStats.p1, breaks:[...s.frameStats.p1.breaks], pottedByColor:{...(s.frameStats.p1.pottedByColor||{})}},
@@ -337,17 +348,31 @@ function restoreSnapshot(s){
 let _missTimer = null;
 let _missCountdownInterval = null;
 
+function cancelMissPicker(){
+  if(_missTimer)             { clearTimeout(_missTimer); _missTimer = null; }
+  if(_missCountdownInterval) { clearInterval(_missCountdownInterval); _missCountdownInterval = null; }
+  const mp = el('miss-picker');
+  if(mp) mp.classList.add('hidden');
+}
+
 function endBreak(){
-  // Show miss difficulty picker for 10 seconds
-  commitVisit();
+  // Ignore if miss picker already up (prevent double-trigger)
+  const mp = el('miss-picker');
+  if(mp && !mp.classList.contains('hidden')) return;
+  // Close other panels
+  hideFoulPanel();
+  hideCorrectPanel();
+
   const cp   = state.currentPlayer;
   const name = state.players[cp].name;
-
-  // Pre-commit the visit so stats are right, then show picker
   showMissPicker(cp, name);
 }
 
 function showMissPicker(cp, name){
+  // Defensive: clear any previous timers
+  if(_missTimer)             { clearTimeout(_missTimer); _missTimer = null; }
+  if(_missCountdownInterval) { clearInterval(_missCountdownInterval); _missCountdownInterval = null; }
+
   const panel  = el('miss-picker');
   const label  = el('miss-who-label');
   const countdown = el('miss-countdown');
@@ -359,7 +384,7 @@ function showMissPicker(cp, name){
 
   _missCountdownInterval = setInterval(() => {
     secs--;
-    countdown.textContent = secs + 's';
+    countdown.textContent = (secs < 0 ? 0 : secs) + 's';
     if(secs <= 0){
       clearInterval(_missCountdownInterval);
       _missCountdownInterval = null;
@@ -368,19 +393,31 @@ function showMissPicker(cp, name){
 
   _missTimer = setTimeout(() => {
     _missTimer = null;
-    commitMiss(cp, 'safety');
+    // Only fire if picker is still visible (i.e. not cancelled)
+    if(!panel.classList.contains('hidden')){
+      commitMiss(cp, 'safety');
+    }
   }, 5000);
 }
 
 function selectMissDifficulty(difficulty){
-  if(_missTimer)             { clearTimeout(_missTimer); _missTimer = null; }
-  if(_missCountdownInterval) { clearInterval(_missCountdownInterval); _missCountdownInterval = null; }
+  // Only accept if miss picker is currently visible
+  const mp = el('miss-picker');
+  if(!mp || mp.classList.contains('hidden')) return;
+  cancelMissPicker();
   const cp = state.currentPlayer;
   commitMiss(cp, difficulty);
 }
 
 function commitMiss(cp, difficulty){
-  el('miss-picker').classList.add('hidden');
+  cancelMissPicker();
+
+  // Snapshot BEFORE state change so we can undo this miss/safety
+  state.undoStack.push(snapshot());
+
+  // Now commit the visit (accumulate time, count visit)
+  commitVisit();
+
   const sk = cp === 0 ? 'p0' : 'p1';
   const diffLabel = { easy:'Easy miss', medium:'Medium miss', hard:'Hard miss', safety:'Safety shot' };
 
@@ -402,7 +439,6 @@ function commitMiss(cp, difficulty){
   if(state.awaiting === 'sequence' && state.colorSeqIdx === COLOR_SEQ.length - 1){
     const s0 = state.players[0].score, s1 = state.players[1].score;
     if(s0 !== s1){
-      el('miss-picker').classList.add('hidden');
       renderGame();
       endFrameAutomatically();
       return;
@@ -411,19 +447,24 @@ function commitMiss(cp, difficulty){
   state.currentPlayer = 1 - cp;
   state.players[state.currentPlayer].currentBreak = 0;
   state.visitScore = 0;
-  state.undoStack  = [];
   state._visitStartMs = Date.now();
   renderGame();
 }
 
 function switchPlayer(){
+  cancelMissPicker();
+  hideFoulPanel();
+  hideCorrectPanel();
+
+  // Snapshot BEFORE the switch so we can undo
+  state.undoStack.push(snapshot());
+
   commitVisit();
   const cp = state.currentPlayer;
   state.players[cp].currentBreak = 0;
   state.currentPlayer = 1 - cp;
   state.players[state.currentPlayer].currentBreak = 0;
   state.visitScore = 0;
-  state.undoStack  = [];
   state._visitStartMs = Date.now();
   if(state.awaiting === 'color'){
     if(state.redsRemaining === 0){ state.awaiting = 'sequence'; state.colorSeqIdx = 0; }
@@ -456,16 +497,22 @@ function commitVisit(countAsVisit){
 function showFoulPanel(){
   const fp = el('foul-panel');
   if(!fp.classList.contains('hidden')){ fp.classList.add('hidden'); return; }
+  // Close other panels first
+  cancelMissPicker();
+  hideCorrectPanel();
   fp.classList.remove('hidden');
 }
-function hideFoulPanel() { el('foul-panel').classList.add('hidden'); }
+function hideFoulPanel() { const fp=el('foul-panel'); if(fp) fp.classList.add('hidden'); }
 
 function applyFoul(value){
   hideFoulPanel();
+  cancelMissPicker();
   const cp  = state.currentPlayer;
   const opp = 1 - cp;
   const sk  = cp === 0 ? 'p0' : 'p1';
-  const osk = cp === 0 ? 'p1' : 'p0';
+
+  // Snapshot BEFORE foul so we can undo
+  state.undoStack.push(snapshot());
 
   commitVisit();
 
@@ -481,16 +528,16 @@ function applyFoul(value){
     if(state.redsRemaining === 0){ state.awaiting = 'sequence'; state.colorSeqIdx = 0; }
     else state.awaiting = 'red';
   }
-  state.undoStack = [];
   state._visitStartMs = Date.now();
   renderGame();
 }
 
 // ─── Frame ending ─────────────────────────────────────────────────────────────
 
-function endFrameAutomatically(){ resolveFrame(); }
+function endFrameAutomatically(){ cancelMissPicker(); hideFoulPanel(); hideCorrectPanel(); resolveFrame(); }
 
 function confirmEndFrame(){
+  cancelMissPicker(); hideFoulPanel(); hideCorrectPanel();
   const p  = state.players;
   const s0 = p[0].score, s1 = p[1].score;
   if(s0 === s1){
@@ -505,6 +552,7 @@ function confirmEndFrame(){
 }
 
 function confirmConcede(){
+  cancelMissPicker(); hideFoulPanel(); hideCorrectPanel();
   const cp  = state.currentPlayer;
   const opp = 1 - cp;
   showConfirm(
@@ -623,6 +671,10 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
       head('Pots') +
       sr(potPct0, potPct1, 'Pot %') +
       sr(posPct0, posPct1, 'Positional %') +
+      sr(
+        p0Pots + (p0s.missEasy||0) + (p0s.missMedium||0) + (p0s.missHard||0) + (p0s.safetyShots||0) + (p0s.fouls||0),
+        p1Pots + (p1s.missEasy||0) + (p1s.missMedium||0) + (p1s.missHard||0) + (p1s.safetyShots||0) + (p1s.fouls||0),
+        'Total shots') +
       sr(p0Pots, p1Pots, 'Total pots') +
       pctRow(p0Pc.red||0,    p1Pc.red||0,    p0Pots, p1Pots, 'Reds') +
       pctRow(p0Pc.yellow||0, p1Pc.yellow||0, p0Pots, p1Pots, 'Yellows') +
@@ -654,6 +706,7 @@ function showFrameSummary(f){
 }
 
 function startNextFrame(){
+  cancelMissPicker(); hideFoulPanel(); hideCorrectPanel();
   el('frame-summary-overlay').classList.add('hidden');
   const nextBreaker = state.completedFrames.length % 2 === 0 ? 0 : 1;
   state.currentPlayer = nextBreaker;
@@ -662,6 +715,7 @@ function startNextFrame(){
 }
 
 function endMatchFromSummary(){
+  cancelMissPicker(); hideFoulPanel(); hideCorrectPanel();
   el('frame-summary-overlay').classList.add('hidden');
   saveMatch();
 }
@@ -835,18 +889,22 @@ function showCorrectPanel(){
     hideCorrectPanel();
     return;
   }
+  cancelMissPicker();
+  hideFoulPanel();
   const cp = state.currentPlayer;
   el('corr-cur-name').textContent  = state.players[cp].name + ' score:';
   el('corr-cur-score').textContent = state.players[cp].score;
   el('corr-reds').textContent      = state.redsRemaining;
   el('correct-panel').classList.remove('hidden');
 }
-function hideCorrectPanel(){ el('correct-panel').classList.add('hidden'); }
+function hideCorrectPanel(){ const cp=el('correct-panel'); if(cp) cp.classList.add('hidden'); }
 
 function applyCorrection(type){
   const p  = state.players;
   const cp = state.currentPlayer;
   let desc = '';
+  // Snapshot BEFORE so corrections can be undone
+  const snap = snapshot();
   if(type === 'add-red' && state.redsRemaining < 15){
     state.redsRemaining++;
     el('corr-reds').textContent = state.redsRemaining;
@@ -859,13 +917,17 @@ function applyCorrection(type){
     p[cp].score++;
     el('corr-cur-score').textContent = p[cp].score;
     desc = '+1 pt to ' + p[cp].name + ' (now ' + p[cp].score + ')';
-  } else if(type === 'remove-pt'){
+  } else if(type === 'remove-pt' && p[cp].score > 0){
     p[cp].score = Math.max(0, p[cp].score - 1);
     el('corr-cur-score').textContent = p[cp].score;
     desc = '-1 pt from ' + p[cp].name + ' (now ' + p[cp].score + ')';
   }
-  if(desc) addLog('correction', 'Correction', desc, undefined);
+  if(!desc) return; // no-op (e.g. tried to remove past 0)
+  state.undoStack.push(snap);
+  addLog('correction', 'Correction', desc, undefined);
   // update score display live without closing panel
+  el('p1-score').textContent = p[0].score;
+  el('p2-score').textContent = p[1].score;
   el('pts-remaining').textContent = ptsLeft() + ' pts left';
   el('phase-label').textContent = phaseDesc();
   renderFrameLog();
@@ -907,3 +969,74 @@ function ballById(id){ return BALLS.find(b => b.id === id); }
 function esc(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ─── Fuzz / abuse test ────────────────────────────────────────────────────────
+// Open browser console and run: fuzzTest()  or  fuzzTest(2000)
+// Simulates random button-bashing and validates state invariants.
+window.fuzzTest = function(iterations){
+  iterations = iterations || 1000;
+  // Seed match if not started
+  if(!el('screen-game').classList.contains('active')){
+    el('player1-name').value = 'Fuzz1';
+    el('player2-name').value = 'Fuzz2';
+    startMatch();
+  }
+  const fails = [];
+  const check = (cond, msg, ctx) => { if(!cond) fails.push({ msg, ctx, iter: i }); };
+
+  const actions = [
+    () => { const b = BALLS[Math.floor(Math.random()*BALLS.length)]; potBall(b); return 'pot ' + b.id; },
+    () => { endBreak(); return 'endBreak'; },
+    () => { const d = ['easy','medium','hard'][Math.floor(Math.random()*3)]; selectMissDifficulty(d); return 'miss ' + d; },
+    () => { const v = 4 + Math.floor(Math.random()*4); applyFoul(v); return 'foul ' + v; },
+    () => { showFoulPanel(); return 'toggleFoul'; },
+    () => { showCorrectPanel(); return 'toggleCorrect'; },
+    () => { const t = ['add-red','remove-red','add-pt','remove-pt'][Math.floor(Math.random()*4)]; applyCorrection(t); return 'corr ' + t; },
+    () => { switchPlayer(); return 'switch'; },
+    () => { undoLastBall(); return 'undo'; },
+  ];
+  let i = 0;
+  for(i=0; i<iterations; i++){
+    let action = 'unknown';
+    try {
+      action = actions[Math.floor(Math.random()*actions.length)]();
+    } catch(e){
+      fails.push({ msg: 'EXCEPTION: ' + e.message, ctx: action, iter: i });
+      break;
+    }
+    // Invariants
+    check(state.players[0].score >= 0, 'P0 score negative', state.players[0].score);
+    check(state.players[1].score >= 0, 'P1 score negative', state.players[1].score);
+    check(state.redsRemaining >= 0 && state.redsRemaining <= 15, 'redsRemaining out of range', state.redsRemaining);
+    check(['red','color','sequence'].includes(state.awaiting), 'invalid awaiting', state.awaiting);
+    check(state.colorSeqIdx >= 0 && state.colorSeqIdx <= COLOR_SEQ.length, 'colorSeqIdx out of range', state.colorSeqIdx);
+    check([0,1].includes(state.currentPlayer), 'invalid currentPlayer', state.currentPlayer);
+    check(!Number.isNaN(state.players[0].score) && !Number.isNaN(state.players[1].score), 'NaN score', null);
+    // pottedByColor matches potCount
+    for(const sk of ['p0','p1']){
+      const fs = state.frameStats[sk];
+      const sum = Object.values(fs.pottedByColor||{}).reduce((a,b)=>a+b,0);
+      check(sum === fs.potCount, 'pottedByColor sum != potCount for '+sk, { sum, potCount: fs.potCount });
+      check(fs.visitTimeMs >= 0, 'visitTimeMs negative for '+sk, fs.visitTimeMs);
+      check(fs.visits >= fs.scoringVisits, 'scoringVisits > visits for '+sk, fs);
+    }
+    if(fails.length > 5) break;
+    // Reset frame if completed (overlay shown) so loop continues
+    if(!el('frame-summary-overlay').classList.contains('hidden')){
+      startNextFrame();
+    }
+  }
+  // Cleanup pending timers
+  cancelMissPicker();
+  hideFoulPanel();
+  hideCorrectPanel();
+  if(!el('confirm-dialog').classList.contains('hidden')) hideConfirm();
+  console.log('Fuzz test complete after ' + i + ' iterations.');
+  if(fails.length){
+    console.error('FAILURES (' + fails.length + '):');
+    fails.forEach(f => console.error('  iter ' + f.iter + ': ' + f.msg, f.ctx));
+  } else {
+    console.log('%c\u2713 All invariants held', 'color:lime;font-weight:bold');
+  }
+  return { iterations: i, fails };
+};
