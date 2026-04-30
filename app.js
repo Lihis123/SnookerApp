@@ -697,17 +697,11 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
   };
   const head = (label) => '<div class="stat-section">'+label+'</div>';
 
-  // Visits section: "N (Xm Ys)" per player, label "Visits – total time"
+  // Visits section: single centred header "Visits (combined) - total time"
   const visitsSubhead = (v0, v1, ms0, ms1) => {
+    const combined = (v0||0) + (v1||0);
     const totalTime = fmtTime((ms0||0) + (ms1||0));
-    const fmt = (v, ms) => (v||0) + ' (' + fmtTime(ms||0) + ')';
-    const w0c = (v0||0) > (v1||0) ? ' sr-win' : '';
-    const w1c = (v1||0) > (v0||0) ? ' sr-win' : '';
-    return '<div class="stat-section" style="display:flex;justify-content:space-between;align-items:baseline;">' +
-      '<span class="sr-val'+w0c+'" style="min-width:54px;text-align:center;font-size:0.72rem;">'+fmt(v0,ms0)+'</span>' +
-      '<span style="flex:1;text-align:center;letter-spacing:1.2px;">Visits &ndash; '+totalTime+'</span>' +
-      '<span class="sr-val'+w1c+'" style="min-width:54px;text-align:center;font-size:0.72rem;">'+fmt(v1,ms1)+'</span>' +
-      '</div>';
+    return head('Visits (' + combined + ') \u2013 ' + totalTime);
   };
 
   // Color accuracy row: shows "N (X%)" count with percentage from attempts
