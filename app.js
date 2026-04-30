@@ -19,10 +19,8 @@ const COLOR_SEQ = ['yellow','green','brown','blue','pink','black'];
 const STORAGE_KEY = 'snookerMatchHistory_v2';
 
 function fmtTime(ms){
-  const s = Math.round((ms||0) / 1000);
-  if(s < 60) return s + 's';
-  const m = Math.floor(s/60), r = s % 60;
-  return m + 'm ' + (r < 10 ? '0' : '') + r + 's';
+  const m = Math.floor((ms||0) / 60000);
+  return m + ' min';
 }
 
 // ─── State ────────────────────────────────────────────────────────────────────
