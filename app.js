@@ -137,8 +137,10 @@ function ptsLeft(){
 function phaseDesc(){
   if(state.awaiting === 'red')
     return state.redsRemaining + ' red' + (state.redsRemaining !== 1 ? 's' : '') + ' on table';
-  if(state.awaiting === 'color')
-    return 'Pot a colour';
+  if(state.awaiting === 'color'){
+    const r = state.redsRemaining;
+    return 'Pot a colour' + (r > 0 ? ' — ' + r + ' red' + (r !== 1 ? 's' : '') + ' left' : ' — colours only');
+  }
   const b = ballById(COLOR_SEQ[state.colorSeqIdx]);
   return 'Colours: pot ' + b.name + ' (' + b.value + ')';
 }
@@ -148,6 +150,11 @@ function renderBalls(){
   c.innerHTML = '';
   BALLS.forEach(ball => {
     if(ball.id === 'red' && state.redsRemaining === 0) return;
+    // In sequence phase, hide colours already cleared from the table
+    if(state.awaiting === 'sequence' && ball.id !== 'red'){
+      const idx = COLOR_SEQ.indexOf(ball.id);
+      if(idx >= 0 && idx < state.colorSeqIdx) return;
+    }
     const on = isBallOn(ball.id);
     const btn = document.createElement('button');
     btn.className = 'ball-btn' + (on ? '' : ' disabled');
@@ -336,7 +343,10 @@ function commitMiss(cp, difficulty){
   addLog('miss', state.players[cp].name, label, undefined);
 
   state.players[cp].currentBreak = 0;
-  if(state.awaiting === 'color') state.awaiting = 'red';
+  if(state.awaiting === 'color'){
+    if(state.redsRemaining === 0){ state.awaiting = 'sequence'; state.colorSeqIdx = 0; }
+    else state.awaiting = 'red';
+  }
   state.currentPlayer = 1 - cp;
   state.players[state.currentPlayer].currentBreak = 0;
   state.visitScore = 0;
@@ -352,7 +362,10 @@ function switchPlayer(){
   state.players[state.currentPlayer].currentBreak = 0;
   state.visitScore = 0;
   state.undoStack  = [];
-  if(state.awaiting === 'color') state.awaiting = 'red';
+  if(state.awaiting === 'color'){
+    if(state.redsRemaining === 0){ state.awaiting = 'sequence'; state.colorSeqIdx = 0; }
+    else state.awaiting = 'red';
+  }
   renderGame();
 }
 
@@ -392,7 +405,10 @@ function applyFoul(value){
   state.currentPlayer = opp;
   state.players[opp].currentBreak = 0;
   state.visitScore = 0;
-  if(state.awaiting === 'color') state.awaiting = 'red';
+  if(state.awaiting === 'color'){
+    if(state.redsRemaining === 0){ state.awaiting = 'sequence'; state.colorSeqIdx = 0; }
+    else state.awaiting = 'red';
+  }
   state.undoStack = [];
   renderGame();
 }
@@ -408,7 +424,11 @@ function confirmEndFrame(){
     showTieBreakDialog(p[0].name, p[1].name);
     return;
   }
-  resolveFrame();
+  const lead = s0 > s1 ? 0 : 1;
+  showConfirm(
+    'End frame?\n' + p[lead].name + ' leads ' + Math.max(s0,s1) + ' \u2013 ' + Math.min(s0,s1),
+    'End Frame', () => resolveFrame()
+  );
 }
 
 function confirmConcede(){
@@ -702,6 +722,10 @@ function toggleFrameDetail(key){
 // ─── Frame correction ─────────────────────────────────────────────────────────
 
 function showCorrectPanel(){
+  if(!el('correct-panel').classList.contains('hidden')){
+    hideCorrectPanel();
+    return;
+  }
   const cp = state.currentPlayer;
   el('corr-cur-name').textContent  = state.players[cp].name + ' score:';
   el('corr-cur-score').textContent = state.players[cp].score;
