@@ -42,10 +42,12 @@ let state = {
   frameLog: [],
   // Accumulate breaks for current visit
   visitScore: 0,
+  // Balls potted in the current player's active visit (cleared on turn end)
+  currentTurnBalls: [],
   // Per-frame stats accumulator
   frameStats: {
-    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, safetyShots:0, potCount:0, visitTimeMs:0, pottedByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0} },
-    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, safetyShots:0, potCount:0, visitTimeMs:0, pottedByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0} },
+    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, safetyShots:0, potCount:0, visitTimeMs:0, pottedByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0}, missCountByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0} },
+    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, safetyShots:0, potCount:0, visitTimeMs:0, pottedByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0}, missCountByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0} },
   },
   // Completed frames saved for history
   completedFrames: [],
@@ -110,11 +112,12 @@ function resetFrameState(){
   state.undoStack     = [];
   state.frameLog      = [];
   state.visitScore    = 0;
+  state.currentTurnBalls = [];
   state.players[0].score = 0; state.players[0].currentBreak = 0;
   state.players[1].score = 0; state.players[1].currentBreak = 0;
   state.frameStats = {
-    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, safetyShots:0, potCount:0, visitTimeMs:0, pottedByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0} },
-    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, safetyShots:0, potCount:0, visitTimeMs:0, pottedByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0} },
+    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, safetyShots:0, potCount:0, visitTimeMs:0, pottedByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0}, missCountByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0} },
+    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, safetyShots:0, potCount:0, visitTimeMs:0, pottedByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0}, missCountByColor:{red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0} },
   };
   state._visitStartMs = Date.now();
 }
@@ -143,6 +146,22 @@ function renderGame(){
   el('player-1-panel').classList.toggle('active-player', cp === 1);
   el('current-player-label').textContent = p[cp].name + "'s turn";
   el('phase-label').textContent = phaseDesc();
+
+  // Turn balls strip in log header
+  const logHeader = el('frame-log-header');
+  if(logHeader){
+    const tbHtml = (state.currentTurnBalls||[]).map(bid => {
+      const b = ballById(bid);
+      return b ? '<span class="turn-ball" style="background:'+b.bg+';color:'+b.fg+'"></span>' : '';
+    }).join('');
+    logHeader.innerHTML = 'Log' + (tbHtml ? '<span class="turn-balls-strip">' + tbHtml + '</span>' : '');
+  }
+
+  // Eliminated: trailing player can't catch up even if they pot everything remaining
+  const pts = ptsLeft();
+  const s0 = p[0].score, s1 = p[1].score;
+  el('player-0-panel').classList.toggle('eliminated-player', s0 < s1 && pts + s0 < s1);
+  el('player-1-panel').classList.toggle('eliminated-player', s1 < s0 && pts + s1 < s0);
 
   renderBalls();
   renderFrameLog();
@@ -270,6 +289,7 @@ function potBall(ball){
   if(!state.frameStats[sk].pottedByColor) state.frameStats[sk].pottedByColor = {red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0};
   state.frameStats[sk].pottedByColor[ball.id]++;
   if(ball.id === 'red') state.frameStats[sk].redsPotsCount++;
+  state.currentTurnBalls.push(ball.id);
 
   addLog('pot', pl.name, ball.name, ball.value, cp, ball.id);
 
@@ -321,9 +341,10 @@ function snapshot(){
     visitScore:  state.visitScore,
     _visitStartMs: state._visitStartMs,
     frameLog:    state.frameLog.map(e=>({...e})),
+    currentTurnBalls: [...(state.currentTurnBalls||[])],
     frameStats: {
-      p0:{...state.frameStats.p0, breaks:[...state.frameStats.p0.breaks], pottedByColor:{...(state.frameStats.p0.pottedByColor||{})}},
-      p1:{...state.frameStats.p1, breaks:[...state.frameStats.p1.breaks], pottedByColor:{...(state.frameStats.p1.pottedByColor||{})}},
+      p0:{...state.frameStats.p0, breaks:[...state.frameStats.p0.breaks], pottedByColor:{...(state.frameStats.p0.pottedByColor||{})}, missCountByColor:{...(state.frameStats.p0.missCountByColor||{})}},
+      p1:{...state.frameStats.p1, breaks:[...state.frameStats.p1.breaks], pottedByColor:{...(state.frameStats.p1.pottedByColor||{})}, missCountByColor:{...(state.frameStats.p1.missCountByColor||{})}},
     },
   };
 }
@@ -337,9 +358,10 @@ function restoreSnapshot(s){
   state.visitScore     = s.visitScore;
   state._visitStartMs  = s._visitStartMs || Date.now();
   state.frameLog       = (s.frameLog || []).map(e=>({...e}));
+  state.currentTurnBalls = [...(s.currentTurnBalls||[])];
   state.frameStats = {
-    p0:{...s.frameStats.p0, breaks:[...s.frameStats.p0.breaks], pottedByColor:{...(s.frameStats.p0.pottedByColor||{})}},
-    p1:{...s.frameStats.p1, breaks:[...s.frameStats.p1.breaks], pottedByColor:{...(s.frameStats.p1.pottedByColor||{})}},
+    p0:{...s.frameStats.p0, breaks:[...s.frameStats.p0.breaks], pottedByColor:{...(s.frameStats.p0.pottedByColor||{})}, missCountByColor:{...(s.frameStats.p0.missCountByColor||{})}},
+    p1:{...s.frameStats.p1, breaks:[...s.frameStats.p1.breaks], pottedByColor:{...(s.frameStats.p1.pottedByColor||{})}, missCountByColor:{...(s.frameStats.p1.missCountByColor||{})}},
   };
 }
 
@@ -426,6 +448,14 @@ function commitMiss(cp, difficulty){
   else if(difficulty === 'hard')   state.frameStats[sk].missHard++;
   else if(difficulty === 'safety') state.frameStats[sk].safetyShots++;
 
+  // Track which specific color was missed (reds and sequence colors only)
+  if(difficulty !== 'safety'){
+    const mc = state.awaiting === 'red' ? 'red' : (state.awaiting === 'sequence' ? COLOR_SEQ[state.colorSeqIdx] : null);
+    if(mc && state.frameStats[sk].missCountByColor)
+      state.frameStats[sk].missCountByColor[mc] = (state.frameStats[sk].missCountByColor[mc] || 0) + 1;
+  }
+  state.currentTurnBalls = [];
+
   const label = diffLabel[difficulty] || 'Safety shot';
   addLog(difficulty === 'safety' ? 'safety' : 'miss', state.players[cp].name, label, undefined, cp);
 
@@ -460,6 +490,7 @@ function switchPlayer(){
   state.undoStack.push(snapshot());
 
   commitVisit();
+  state.currentTurnBalls = [];
   const cp = state.currentPlayer;
   state.players[cp].currentBreak = 0;
   state.currentPlayer = 1 - cp;
@@ -515,6 +546,7 @@ function applyFoul(value){
   state.undoStack.push(snapshot());
 
   commitVisit();
+  state.currentTurnBalls = [];
 
   state.players[opp].score += value;
   state.frameStats[sk].fouls++;
@@ -628,6 +660,16 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
   const sp1 = (p1s.visits||0) > 0 ? Math.round((p1s.scoringVisits||0)/p1s.visits*100) : 0;
   const p0Pots = p0s.potCount || 0, p1Pots = p1s.potCount || 0;
   const p0Pc = p0s.pottedByColor || {}, p1Pc = p1s.pottedByColor || {};
+  const p0mc = p0s.missCountByColor || {}, p1mc = p1s.missCountByColor || {};
+
+  // Per-color accuracy row: shows X% (pots / (pots + misses)) for that specific color
+  const accuracyRow = (n0, n1, m0, m1, lbl) => {
+    const t0 = n0 + m0, t1 = n1 + m1;
+    const fmt = (n, t) => t === 0 ? (n > 0 ? String(n) : '\u2013') : Math.round(n*100/t)+'%';
+    const r0 = t0 > 0 ? n0/t0 : 0, r1 = t1 > 0 ? n1/t1 : 0;
+    const w0c = r0 > r1 ? ' sr-win' : '', w1c = r1 > r0 ? ' sr-win' : '';
+    return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0,t0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1,t1)+'</span></div>';
+  };
 
   // Pot %: pots / (pots + intentional misses + fouls); safety excluded
   const p0Attempts = p0Pots + (p0s.missEasy||0) + (p0s.missMedium||0) + (p0s.missHard||0) + (p0s.fouls||0);
@@ -676,13 +718,13 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
         p1Pots + (p1s.missEasy||0) + (p1s.missMedium||0) + (p1s.missHard||0) + (p1s.safetyShots||0) + (p1s.fouls||0),
         'Total shots') +
       sr(p0Pots, p1Pots, 'Total pots') +
-      pctRow(p0Pc.red||0,    p1Pc.red||0,    p0Pots, p1Pots, 'Reds') +
-      pctRow(p0Pc.yellow||0, p1Pc.yellow||0, p0Pots, p1Pots, 'Yellows') +
-      pctRow(p0Pc.green||0,  p1Pc.green||0,  p0Pots, p1Pots, 'Greens') +
-      pctRow(p0Pc.brown||0,  p1Pc.brown||0,  p0Pots, p1Pots, 'Browns') +
-      pctRow(p0Pc.blue||0,   p1Pc.blue||0,   p0Pots, p1Pots, 'Blues') +
-      pctRow(p0Pc.pink||0,   p1Pc.pink||0,   p0Pots, p1Pots, 'Pinks') +
-      pctRow(p0Pc.black||0,  p1Pc.black||0,  p0Pots, p1Pots, 'Blacks') +
+      accuracyRow(p0Pc.red||0,    p1Pc.red||0,    p0mc.red||0,    p1mc.red||0,    'Reds') +
+      accuracyRow(p0Pc.yellow||0, p1Pc.yellow||0, p0mc.yellow||0, p1mc.yellow||0, 'Yellows') +
+      accuracyRow(p0Pc.green||0,  p1Pc.green||0,  p0mc.green||0,  p1mc.green||0,  'Greens') +
+      accuracyRow(p0Pc.brown||0,  p1Pc.brown||0,  p0mc.brown||0,  p1mc.brown||0,  'Browns') +
+      accuracyRow(p0Pc.blue||0,   p1Pc.blue||0,   p0mc.blue||0,   p1mc.blue||0,   'Blues') +
+      accuracyRow(p0Pc.pink||0,   p1Pc.pink||0,   p0mc.pink||0,   p1mc.pink||0,   'Pinks') +
+      accuracyRow(p0Pc.black||0,  p1Pc.black||0,  p0mc.black||0,  p1mc.black||0,  'Blacks') +
       head('Misses & Safety') +
       pctRow(p0s.missEasy||0,   p1s.missEasy||0,   p0Pots, p1Pots, 'Easy misses',   true) +
       pctRow(p0s.missMedium||0, p1s.missMedium||0, p0Pots, p1Pots, 'Medium misses', true) +
@@ -774,6 +816,8 @@ function saveMatch(){
     p1VisitTimeMs: cf.reduce((s,f)=>s+(f.stats.p1.visitTimeMs||0),0),
     p0PottedByColor: cf.reduce((acc,f)=>{ const pc=(f.stats.p0.pottedByColor)||{}; for(const k in pc) acc[k]=(acc[k]||0)+pc[k]; return acc; }, {red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0}),
     p1PottedByColor: cf.reduce((acc,f)=>{ const pc=(f.stats.p1.pottedByColor)||{}; for(const k in pc) acc[k]=(acc[k]||0)+pc[k]; return acc; }, {red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0}),
+    p0MissCountByColor: cf.reduce((acc,f)=>{ const mc=(f.stats.p0.missCountByColor)||{}; for(const k in mc) acc[k]=(acc[k]||0)+mc[k]; return acc; }, {red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0}),
+    p1MissCountByColor: cf.reduce((acc,f)=>{ const mc=(f.stats.p1.missCountByColor)||{}; for(const k in mc) acc[k]=(acc[k]||0)+mc[k]; return acc; }, {red:0,yellow:0,green:0,brown:0,blue:0,pink:0,black:0}),
     p0SafetyShots: cf.reduce((s,f)=>s+(f.stats.p0.safetyShots||0),0),
     p1SafetyShots: cf.reduce((s,f)=>s+(f.stats.p1.safetyShots||0),0),
     frames:   cf,
@@ -830,6 +874,7 @@ function renderHistory(){
       visitTimeMs: m.p0VisitTimeMs||0,
       potCount: m.p0PotCount||0,
       pottedByColor: m.p0PottedByColor || {},
+      missCountByColor: m.p0MissCountByColor || {},
       missEasy: m.p0MissEasy||0,
       missMedium: m.p0MissMedium||0,
       missHard: m.p0MissHard||0,
@@ -845,6 +890,7 @@ function renderHistory(){
       visitTimeMs: m.p1VisitTimeMs||0,
       potCount: m.p1PotCount||0,
       pottedByColor: m.p1PottedByColor || {},
+      missCountByColor: m.p1MissCountByColor || {},
       missEasy: m.p1MissEasy||0,
       missMedium: m.p1MissMedium||0,
       missHard: m.p1MissHard||0,
