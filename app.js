@@ -713,7 +713,9 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
     const w0c = (n0 > n1 || r0 > r1) && (n0 > 0 || n1 > 0) ? ' sr-win' : '';
     const w1c = (n1 > n0 || r1 > r0) && (n0 > 0 || n1 > 0) ? ' sr-win' : '';
     return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0,t0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1,t1)+'</span></div>';
-  }; '<div class="card-names-row"><span>'+esc(p0Name)+'</span><span></span><span>'+esc(p1Name)+'</span></div>' +
+  };
+
+  return '<div class="card-names-row"><span>'+esc(p0Name)+'</span><span></span><span>'+esc(p1Name)+'</span></div>' +
     '<div class="card-stats">' +
       head('Score') +
       sr(p0Score||0, p1Score||0, 'Total points') +
