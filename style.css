@@ -398,5 +398,32 @@ html, body {
 
 /* Scrollbar */
 ::-webkit-scrollbar { width:5px; }
+
+/* ══ MISS DIFFICULTY PICKER ══ */
+.miss-picker {
+  background:#0f2e1a; border:2px solid var(--gold);
+  border-radius:12px; padding:14px 14px 12px;
+  margin:10px 0; box-shadow:var(--shadow);
+}
+.miss-picker.hidden { display:none; }
+.miss-picker-header {
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:0.9rem; color:var(--gold-light); margin-bottom:10px;
+}
+.miss-countdown {
+  font-size:0.85rem; color:var(--dim); font-variant-numeric:tabular-nums;
+}
+.miss-picker-btns {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+}
+.miss-btn {
+  padding:10px 4px; border:none; border-radius:8px;
+  font-weight:700; font-size:0.9rem; cursor:pointer;
+  transition:filter 0.15s;
+}
+.miss-btn:hover { filter:brightness(1.15); }
+.miss-easy   { background:#27a857; color:#fff; }
+.miss-medium { background:#c99627; color:#fff; }
+.miss-hard   { background:#b83232; color:#fff; }
 ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.14); border-radius:3px; }

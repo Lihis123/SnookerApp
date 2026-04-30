@@ -37,8 +37,8 @@ let state = {
   visitScore: 0,
   // Per-frame stats accumulator
   frameStats: {
-    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0 },
-    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0 },
+    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0 },
+    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0 },
   },
   // Completed frames saved for history
   completedFrames: [],
@@ -91,8 +91,8 @@ function resetFrameState(){
   state.players[0].score = 0; state.players[0].currentBreak = 0;
   state.players[1].score = 0; state.players[1].currentBreak = 0;
   state.frameStats = {
-    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0 },
-    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0 },
+    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0 },
+    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0 },
   };
 }
 
@@ -278,12 +278,65 @@ function restoreSnapshot(s){
 
 // ─── Visit / break management ─────────────────────────────────────────────────
 
+let _missTimer = null;
+let _missCountdownInterval = null;
+
 function endBreak(){
+  // Show miss difficulty picker for 10 seconds
   commitVisit();
+  const cp   = state.currentPlayer;
+  const name = state.players[cp].name;
+
+  // Pre-commit the visit so stats are right, then show picker
+  showMissPicker(cp, name);
+}
+
+function showMissPicker(cp, name){
+  const panel  = el('miss-picker');
+  const label  = el('miss-who-label');
+  const countdown = el('miss-countdown');
+  label.textContent = name + ' missed — how difficult?';
+  panel.classList.remove('hidden');
+
+  let secs = 10;
+  countdown.textContent = secs + 's';
+
+  _missCountdownInterval = setInterval(() => {
+    secs--;
+    countdown.textContent = secs + 's';
+    if(secs <= 0){
+      clearInterval(_missCountdownInterval);
+      _missCountdownInterval = null;
+    }
+  }, 1000);
+
+  _missTimer = setTimeout(() => {
+    _missTimer = null;
+    commitMiss(cp, 'unknown');
+  }, 10000);
+}
+
+function selectMissDifficulty(difficulty){
+  if(_missTimer)             { clearTimeout(_missTimer); _missTimer = null; }
+  if(_missCountdownInterval) { clearInterval(_missCountdownInterval); _missCountdownInterval = null; }
   const cp = state.currentPlayer;
+  commitMiss(cp, difficulty);
+}
+
+function commitMiss(cp, difficulty){
+  el('miss-picker').classList.add('hidden');
+  const sk = cp === 0 ? 'p0' : 'p1';
+  const diffLabel = { easy:'Easy miss', medium:'Medium miss', hard:'Hard miss', unknown:'Miss' };
+
+  if(difficulty === 'easy')   state.frameStats[sk].missEasy++;
+  else if(difficulty === 'medium') state.frameStats[sk].missMedium++;
+  else if(difficulty === 'hard')   state.frameStats[sk].missHard++;
+
+  const label = diffLabel[difficulty] || 'Miss';
+  addLog('miss', state.players[cp].name, label, undefined);
+
   state.players[cp].currentBreak = 0;
   if(state.awaiting === 'color') state.awaiting = 'red';
-  addLog('miss', state.players[cp].name, 'end of visit', undefined);
   state.currentPlayer = 1 - cp;
   state.players[state.currentPlayer].currentBreak = 0;
   state.visitScore = 0;
@@ -456,6 +509,9 @@ function showFrameSummary(f){
     fsr(sp0+'%', sp1+'%', 'Scoring visit %') +
     fsr(p0s.redsPotsCount||0, p1s.redsPotsCount||0, 'Reds potted') +
     fsr(p0s.fouls, p1s.fouls, 'Fouls', true) +
+    fsr(p0s.missEasy||0, p1s.missEasy||0, 'Easy misses') +
+    fsr(p0s.missMedium||0, p1s.missMedium||0, 'Medium misses') +
+    fsr(p0s.missHard||0, p1s.missHard||0, 'Hard misses') +
     '</div>';
 
   ov.classList.remove('hidden');
@@ -510,6 +566,12 @@ function saveMatch(){
     p1Fifties:   cf.reduce((s,f)=>s+(f.stats.p1.breaks.filter(b=>b>=50&&b<100).length),0),
     p0Fouls:  cf.reduce((s,f)=>s+f.stats.p0.fouls,0),
     p1Fouls:  cf.reduce((s,f)=>s+f.stats.p1.fouls,0),
+    p0MissEasy:   cf.reduce((s,f)=>s+(f.stats.p0.missEasy||0),0),
+    p1MissEasy:   cf.reduce((s,f)=>s+(f.stats.p1.missEasy||0),0),
+    p0MissMedium: cf.reduce((s,f)=>s+(f.stats.p0.missMedium||0),0),
+    p1MissMedium: cf.reduce((s,f)=>s+(f.stats.p1.missMedium||0),0),
+    p0MissHard:   cf.reduce((s,f)=>s+(f.stats.p0.missHard||0),0),
+    p1MissHard:   cf.reduce((s,f)=>s+(f.stats.p1.missHard||0),0),
     frames:   cf,
   };
 
@@ -570,6 +632,9 @@ function renderHistory(){
           fsr2(sp0+'%',sp1+'%','Scoring visit %')+
           fsr2(p0s.redsPotsCount||0,p1s.redsPotsCount||0,'Reds potted')+
           fsr2(p0s.fouls||0,p1s.fouls||0,'Fouls',true)+
+          fsr2(p0s.missEasy||0,p1s.missEasy||0,'Easy misses')+
+          fsr2(p0s.missMedium||0,p1s.missMedium||0,'Medium misses')+
+          fsr2(p0s.missHard||0,p1s.missHard||0,'Hard misses')+
           '</div>';
         return '<div class="frame-detail-item">'+
           '<button class="btn-frame-detail" onclick="toggleFrameDetail(\''+key+'\')">'+
@@ -609,6 +674,9 @@ function renderHistory(){
         sr(m.p0Centuries||0, m.p1Centuries||0, '100+ breaks')+
         sr(m.p0Fifties||0,   m.p1Fifties||0,   '50+ breaks')+
         sr(m.p0Fouls||0, m.p1Fouls||0, 'Fouls', true)+
+        sr(m.p0MissEasy||0, m.p1MissEasy||0, 'Easy misses')+
+        sr(m.p0MissMedium||0, m.p1MissMedium||0, 'Medium misses')+
+        sr(m.p0MissHard||0, m.p1MissHard||0, 'Hard misses')+
       '</div>'+
       frameBreakdown+
     '</div>';
@@ -634,18 +702,18 @@ function toggleFrameDetail(key){
 // ─── Frame correction ─────────────────────────────────────────────────────────
 
 function showCorrectPanel(){
-  el('corr-p0-name').textContent = state.players[0].name;
-  el('corr-p1-name').textContent = state.players[1].name;
-  el('corr-reds').textContent    = state.redsRemaining;
-  el('corr-pts').value           = 1;
+  const cp = state.currentPlayer;
+  el('corr-cur-name').textContent  = state.players[cp].name + ' score:';
+  el('corr-cur-score').textContent = state.players[cp].score;
+  el('corr-reds').textContent      = state.redsRemaining;
   el('correct-panel').classList.remove('hidden');
 }
 function hideCorrectPanel(){ el('correct-panel').classList.add('hidden'); }
 
 function applyCorrection(type){
-  const pts = Math.max(1, parseInt((el('corr-pts') || {}).value) || 1);
-  const p   = state.players;
-  let desc  = '';
+  const p  = state.players;
+  const cp = state.currentPlayer;
+  let desc = '';
   if(type === 'add-red' && state.redsRemaining < 15){
     state.redsRemaining++;
     el('corr-reds').textContent = state.redsRemaining;
@@ -654,22 +722,20 @@ function applyCorrection(type){
     state.redsRemaining--;
     el('corr-reds').textContent = state.redsRemaining;
     desc = 'Removed 1 red (' + state.redsRemaining + ' on table)';
-  } else if(type === 'add-pts-0'){
-    p[0].score += pts;
-    desc = '+' + pts + ' pts to ' + p[0].name + ' (now ' + p[0].score + ')';
-  } else if(type === 'remove-pts-0'){
-    p[0].score = Math.max(0, p[0].score - pts);
-    desc = '-' + pts + ' pts from ' + p[0].name + ' (now ' + p[0].score + ')';
-  } else if(type === 'add-pts-1'){
-    p[1].score += pts;
-    desc = '+' + pts + ' pts to ' + p[1].name + ' (now ' + p[1].score + ')';
-  } else if(type === 'remove-pts-1'){
-    p[1].score = Math.max(0, p[1].score - pts);
-    desc = '-' + pts + ' pts from ' + p[1].name + ' (now ' + p[1].score + ')';
+  } else if(type === 'add-pt'){
+    p[cp].score++;
+    el('corr-cur-score').textContent = p[cp].score;
+    desc = '+1 pt to ' + p[cp].name + ' (now ' + p[cp].score + ')';
+  } else if(type === 'remove-pt'){
+    p[cp].score = Math.max(0, p[cp].score - 1);
+    el('corr-cur-score').textContent = p[cp].score;
+    desc = '-1 pt from ' + p[cp].name + ' (now ' + p[cp].score + ')';
   }
   if(desc) addLog('correction', 'Correction', desc, undefined);
-  hideCorrectPanel();
-  renderGame();
+  // update score display live without closing panel
+  const scoreElId = cp === 0 ? 'p1-score' : 'p2-score';
+  el(scoreElId).textContent = p[cp].score;
+  el('pts-remaining').textContent = ptsLeft() + ' pts left';
 }
 
 function confirmClearHistory(){

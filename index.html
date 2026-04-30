@@ -119,29 +119,32 @@
         <div class="correct-row">
           <span class="correct-label">Reds on table</span>
           <div class="correct-btns">
-            <button class="corr-btn" onclick="applyCorrection('remove-red')">&#8722; Red</button>
+            <button class="corr-btn corr-remove" onclick="applyCorrection('remove-red')">&#8722;</button>
             <span id="corr-reds" class="corr-val">15</span>
-            <button class="corr-btn" onclick="applyCorrection('add-red')">+ Red</button>
+            <button class="corr-btn corr-add" onclick="applyCorrection('add-red')">+</button>
           </div>
         </div>
         <div class="correct-row">
-          <span class="correct-label">Points to adjust</span>
-          <input type="number" id="corr-pts" value="1" min="1" max="147" class="corr-pts-input">
-        </div>
-        <div class="correct-row">
-          <span id="corr-p0-name" class="correct-label">Player 1</span>
+          <span id="corr-cur-name" class="correct-label">Player score:</span>
           <div class="correct-btns">
-            <button class="corr-btn corr-remove" onclick="applyCorrection('remove-pts-0')">&#8722; Pts</button>
-            <button class="corr-btn corr-add" onclick="applyCorrection('add-pts-0')">+ Pts</button>
+            <button class="corr-btn corr-remove" onclick="applyCorrection('remove-pt')">&#8722;</button>
+            <span id="corr-cur-score" class="corr-val">0</span>
+            <button class="corr-btn corr-add" onclick="applyCorrection('add-pt')">+</button>
           </div>
         </div>
-        <div class="correct-row">
-          <span id="corr-p1-name" class="correct-label">Player 2</span>
-          <div class="correct-btns">
-            <button class="corr-btn corr-remove" onclick="applyCorrection('remove-pts-1')">&#8722; Pts</button>
-            <button class="corr-btn corr-add" onclick="applyCorrection('add-pts-1')">+ Pts</button>
-          </div>
-        </div>
+      </div>
+    </div>
+
+    <!-- Miss difficulty picker -->
+    <div id="miss-picker" class="miss-picker hidden">
+      <div class="miss-picker-header">
+        <span id="miss-who-label">How difficult was the miss?</span>
+        <span id="miss-countdown" class="miss-countdown">10s</span>
+      </div>
+      <div class="miss-picker-btns">
+        <button class="miss-btn miss-easy"   onclick="selectMissDifficulty('easy')">Easy</button>
+        <button class="miss-btn miss-medium" onclick="selectMissDifficulty('medium')">Medium</button>
+        <button class="miss-btn miss-hard"   onclick="selectMissDifficulty('hard')">Hard</button>
       </div>
     </div>
 
