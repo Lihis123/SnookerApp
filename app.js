@@ -120,6 +120,8 @@ function renderGame(){
   el('p2-break').textContent    = p[1].currentBreak;
   el('p1-best').textContent     = p[0].bestBreak;
   el('p2-best').textContent     = p[1].bestBreak;
+  el('p1-score').textContent    = p[0].score;
+  el('p2-score').textContent    = p[1].score;
   el('pts-remaining').textContent = ptsLeft() + ' pts left';
 
   el('player-0-panel').classList.toggle('active-player', cp === 0);
@@ -565,6 +567,19 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
   const p0Pots = p0s.potCount || 0, p1Pots = p1s.potCount || 0;
   const p0Pc = p0s.pottedByColor || {}, p1Pc = p1s.pottedByColor || {};
 
+  // Pot %: pots / (pots + intentional misses + fouls); safety excluded
+  const p0Attempts = p0Pots + (p0s.missEasy||0) + (p0s.missMedium||0) + (p0s.missHard||0) + (p0s.fouls||0);
+  const p1Attempts = p1Pots + (p1s.missEasy||0) + (p1s.missMedium||0) + (p1s.missHard||0) + (p1s.fouls||0);
+  const potPct0 = p0Attempts > 0 ? Math.round(p0Pots * 100 / p0Attempts) + '%' : 'N/A';
+  const potPct1 = p1Attempts > 0 ? Math.round(p1Pots * 100 / p1Attempts) + '%' : 'N/A';
+
+  // Positional %: of all pots, how many led to another pot in the same visit
+  // = (potCount - scoringVisits) / potCount
+  const posPots0 = Math.max(0, p0Pots - (p0s.scoringVisits||0));
+  const posPots1 = Math.max(0, p1Pots - (p1s.scoringVisits||0));
+  const posPct0 = p0Pots > 0 ? Math.round(posPots0 * 100 / p0Pots) + '%' : 'N/A';
+  const posPct1 = p1Pots > 0 ? Math.round(posPots1 * 100 / p1Pots) + '%' : 'N/A';
+
   const sr = (v0, v1, lbl, loWins) => {
     const n0 = parseFloat(v0), n1 = parseFloat(v1);
     const w0c = !loWins ? (n0 > n1 ? ' sr-win' : '') : (n0 < n1 ? ' sr-win' : '');
@@ -586,13 +601,14 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
       head('Breaks') +
       sr(p0Best||p0s.highestBreak||0, p1Best||p1s.highestBreak||0, 'Best break') +
       sr(avgB(p0b), avgB(p1b), 'Avg break') +
-      sr(p0b.filter(b=>b>=100).length, p1b.filter(b=>b>=100).length, '100+ breaks') +
-      sr(p0b.filter(b=>b>=50&&b<100).length, p1b.filter(b=>b>=50&&b<100).length, '50+ breaks') +
+      sr(p0b.filter(b=>b>=20).length, p1b.filter(b=>b>=20).length, '20+ breaks') +
       head('Visits') +
-      sr((p0s.visits||0)+' ('+fmtTime(p0s.visitTimeMs||0)+')', (p1s.visits||0)+' ('+fmtTime(p1s.visitTimeMs||0)+')', 'Visits') +
-      sr(sp0+'%', sp1+'%', 'Scoring visit %') +
+      sr(p0s.visits||0, p1s.visits||0, 'Visits') +
+      sr(sp0+'% ('+fmtTime(p0s.visitTimeMs||0)+')', sp1+'% ('+fmtTime(p1s.visitTimeMs||0)+')', 'Scoring visit %') +
       head('Pots') +
-      sr(p0Pots, p1Pots, 'Total shots') +
+      sr(potPct0, potPct1, 'Pot %') +
+      sr(posPct0, posPct1, 'Positional %') +
+      sr(p0Pots, p1Pots, 'Total pots') +
       pctRow(p0Pc.red||0,    p1Pc.red||0,    p0Pots, p1Pots, 'Reds') +
       pctRow(p0Pc.yellow||0, p1Pc.yellow||0, p0Pots, p1Pots, 'Yellows') +
       pctRow(p0Pc.green||0,  p1Pc.green||0,  p0Pots, p1Pots, 'Greens') +
