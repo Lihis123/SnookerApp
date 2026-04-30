@@ -697,15 +697,7 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
   };
   const head = (label) => '<div class="stat-section">'+label+'</div>';
 
-  // Visits section: counts as side values, label = "Visits – totalFrameTime"
-  const visitsSubhead = (v0, v1, ms0, ms1) => {
-    const totalTime = fmtTime((ms0||0) + (ms1||0));
-    return '<div class="stat-section" style="display:flex;justify-content:space-between;align-items:baseline;">'+
-      '<span class="sr-val" style="min-width:54px;text-align:center;font-size:0.68rem;color:var(--cream);">'+(v0||0)+'</span>'+
-      '<span style="flex:1;text-align:center;letter-spacing:1.2px;">Visits \u2013 '+totalTime+'</span>'+
-      '<span class="sr-val" style="min-width:54px;text-align:center;font-size:0.68rem;color:var(--cream);">'+(v1||0)+'</span>'+
-      '</div>';
-  };
+  // Visits section: "N (Xm Ys)" per player, label "Visits – total time"\n  const visitsSubhead = (v0, v1, ms0, ms1) => {\n    const totalTime = fmtTime((ms0||0) + (ms1||0));\n    const fmt = (v, ms) => (v||0) + ' (' + fmtTime(ms||0) + ')';\n    const w0c = (v0||0) > (v1||0) ? ' sr-win' : '';\n    const w1c = (v1||0) > (v0||0) ? ' sr-win' : '';\n    return '<div class=\"stat-section\" style=\"display:flex;justify-content:space-between;align-items:baseline;\">'+\n      '<span class=\"sr-val'+w0c+'\" style=\"min-width:54px;text-align:center;font-size:0.72rem;\">'+fmt(v0,ms0)+'</span>'+\n      '<span style=\"flex:1;text-align:center;letter-spacing:1.2px;\">Visits &ndash; '+totalTime+'</span>'+\n      '<span class=\"sr-val'+w1c+'\" style=\"min-width:54px;text-align:center;font-size:0.72rem;\">'+fmt(v1,ms1)+'</span>'+\n      '</div>';\n  };
 
   // Color accuracy row: shows "N (X%)" count with percentage from attempts
   const colorAccRow = (n0, n1, m0, m1, lbl) => {
