@@ -86,6 +86,20 @@ function startMatch(){
   resetFrameState();
   renderGame();
   showScreen('game');
+  startVisitTimer();
+}
+
+let _visitTimerInterval = null;
+function startVisitTimer(){
+  if(_visitTimerInterval) return;
+  _visitTimerInterval = setInterval(updateVisitTimer, 250);
+  updateVisitTimer();
+}
+function updateVisitTimer(){
+  const elt = el('visit-timer');
+  if(!elt) return;
+  const start = state._visitStartMs || Date.now();
+  elt.textContent = fmtTime(Date.now() - start);
 }
 
 function resetFrameState(){

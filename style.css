@@ -127,6 +127,11 @@ html, body {
   50%{ opacity:0.35; transform:scale(0.82); }
 }
 #current-player-label { font-weight:600; color:var(--gold-light); font-size:0.88rem; }
+.visit-timer {
+  font-size:0.72rem; color:var(--cream); font-weight:600;
+  background:rgba(0,0,0,0.25); padding:2px 8px; border-radius:10px;
+  font-variant-numeric:tabular-nums; min-width:38px; text-align:center;
+}
 .phase-label { font-size:0.7rem; color:var(--dim); margin-left:auto; }
 .pts-remaining { font-size:0.68rem; color:var(--gold); font-weight:600; }
 
