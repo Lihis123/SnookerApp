@@ -37,8 +37,8 @@ let state = {
   visitScore: 0,
   // Per-frame stats accumulator
   frameStats: {
-    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0 },
-    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0 },
+    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, potCount:0 },
+    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, potCount:0 },
   },
   // Completed frames saved for history
   completedFrames: [],
@@ -91,8 +91,8 @@ function resetFrameState(){
   state.players[0].score = 0; state.players[0].currentBreak = 0;
   state.players[1].score = 0; state.players[1].currentBreak = 0;
   state.frameStats = {
-    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0 },
-    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0 },
+    p0:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, potCount:0 },
+    p1:{ totalPotted:0, highestBreak:0, breaks:[], fouls:0, redsPotsCount:0, visits:0, scoringVisits:0, missEasy:0, missMedium:0, missHard:0, potCount:0 },
   };
 }
 
@@ -150,10 +150,17 @@ function renderBalls(){
   c.innerHTML = '';
   BALLS.forEach(ball => {
     if(ball.id === 'red' && state.redsRemaining === 0) return;
-    // In sequence phase, hide colours already cleared from the table
+    // In sequence phase, grey out colours already cleared from the table
     if(state.awaiting === 'sequence' && ball.id !== 'red'){
       const idx = COLOR_SEQ.indexOf(ball.id);
-      if(idx >= 0 && idx < state.colorSeqIdx) return;
+      if(idx >= 0 && idx < state.colorSeqIdx){
+        const gb = document.createElement('button');
+        gb.className = 'ball-btn ball-potted';
+        gb.style.cssText = 'background:' + ball.bg + ';color:' + ball.fg;
+        gb.innerHTML = '<span class="ball-name">' + ball.name + '</span><span class="ball-pts">' + ball.value + '</span>';
+        c.appendChild(gb);
+        return;
+      }
     }
     const on = isBallOn(ball.id);
     const btn = document.createElement('button');
@@ -203,6 +210,9 @@ function addLog(type, player, desc, pts){
 // ─── Potting ──────────────────────────────────────────────────────────────────
 
 function potBall(ball){
+  // Guard against stale click events (e.g. rapid double-clicks)
+  if(!isBallOn(ball.id)) return;
+
   const cp  = state.currentPlayer;
   const pl  = state.players[cp];
   const sk  = cp === 0 ? 'p0' : 'p1';
@@ -215,6 +225,7 @@ function potBall(ball){
   if(pl.currentBreak > pl.bestBreak) pl.bestBreak = pl.currentBreak;
 
   state.frameStats[sk].totalPotted += ball.value;
+  state.frameStats[sk].potCount++;
   if(ball.id === 'red') state.frameStats[sk].redsPotsCount++;
 
   addLog('pot', pl.name, 'potted ' + ball.name, ball.value);
@@ -516,6 +527,13 @@ function showFrameSummary(f){
     const w1c = !loWins ? (n1 > n0 ? ' sr-win' : '') : (n1 < n0 ? ' sr-win' : '');
     return '<div class="stat-row"><span class="sr-val'+w0c+'">'+v0+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+v1+'</span></div>';
   };
+  const p0Pots = p0s.potCount || 0, p1Pots = p1s.potCount || 0;
+  const mRow = (n0, n1, t0, t1, lbl) => {
+    const fmt = (n, t) => t > 0 ? n + ' (' + Math.round(n * 100 / t) + '%)' : String(n);
+    const w0c = n0 < n1 ? ' sr-win' : '';
+    const w1c = n1 < n0 ? ' sr-win' : '';
+    return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0,t0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1,t1)+'</span></div>';
+  };
 
   el('fs-stats').innerHTML =
     '<div class="card-names-row"><span>' + esc(p[0].name) + '</span><span></span><span>' + esc(p[1].name) + '</span></div>' +
@@ -528,10 +546,11 @@ function showFrameSummary(f){
     fsr(p0s.visits||0, p1s.visits||0, 'Visits') +
     fsr(sp0+'%', sp1+'%', 'Scoring visit %') +
     fsr(p0s.redsPotsCount||0, p1s.redsPotsCount||0, 'Reds potted') +
+    fsr(p0Pots, p1Pots, 'Total shots') +
     fsr(p0s.fouls, p1s.fouls, 'Fouls', true) +
-    fsr(p0s.missEasy||0, p1s.missEasy||0, 'Easy misses') +
-    fsr(p0s.missMedium||0, p1s.missMedium||0, 'Medium misses') +
-    fsr(p0s.missHard||0, p1s.missHard||0, 'Hard misses') +
+    mRow(p0s.missEasy||0, p1s.missEasy||0, p0Pots, p1Pots, 'Easy misses') +
+    mRow(p0s.missMedium||0, p1s.missMedium||0, p0Pots, p1Pots, 'Medium misses') +
+    mRow(p0s.missHard||0, p1s.missHard||0, p0Pots, p1Pots, 'Hard misses') +
     '</div>';
 
   ov.classList.remove('hidden');
@@ -592,6 +611,8 @@ function saveMatch(){
     p1MissMedium: cf.reduce((s,f)=>s+(f.stats.p1.missMedium||0),0),
     p0MissHard:   cf.reduce((s,f)=>s+(f.stats.p0.missHard||0),0),
     p1MissHard:   cf.reduce((s,f)=>s+(f.stats.p1.missHard||0),0),
+    p0PotCount:   cf.reduce((s,f)=>s+(f.stats.p0.potCount||0),0),
+    p1PotCount:   cf.reduce((s,f)=>s+(f.stats.p1.potCount||0),0),
     frames:   cf,
   };
 
@@ -639,6 +660,13 @@ function renderHistory(){
         const avgB = bs => bs.length ? Math.round(bs.reduce((a,b)=>a+b,0)/bs.length) : 0;
         const sp0 = p0s.visits > 0 ? Math.round((p0s.scoringVisits||0)/p0s.visits*100) : 0;
         const sp1 = p1s.visits > 0 ? Math.round((p1s.scoringVisits||0)/p1s.visits*100) : 0;
+        const fp0Pots = p0s.potCount||0, fp1Pots = p1s.potCount||0;
+        const mRow2 = (n0, n1, t0, t1, lbl) => {
+          const fmt = (n, t) => t > 0 ? n + ' (' + Math.round(n*100/t) + '%)' : String(n);
+          const w0c = n0 < n1 ? ' sr-win' : '';
+          const w1c = n1 < n0 ? ' sr-win' : '';
+          return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0,t0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1,t1)+'</span></div>';
+        };
         const key = i+'-'+fi;
         const statsHtml =
           '<div class="card-names-row"><span>'+esc(m.p0Name)+'</span><span></span><span>'+esc(m.p1Name)+'</span></div>'+
@@ -651,10 +679,11 @@ function renderHistory(){
           fsr2(p0s.visits||0,p1s.visits||0,'Visits')+
           fsr2(sp0+'%',sp1+'%','Scoring visit %')+
           fsr2(p0s.redsPotsCount||0,p1s.redsPotsCount||0,'Reds potted')+
+          fsr2(fp0Pots,fp1Pots,'Total shots')+
           fsr2(p0s.fouls||0,p1s.fouls||0,'Fouls',true)+
-          fsr2(p0s.missEasy||0,p1s.missEasy||0,'Easy misses')+
-          fsr2(p0s.missMedium||0,p1s.missMedium||0,'Medium misses')+
-          fsr2(p0s.missHard||0,p1s.missHard||0,'Hard misses')+
+          mRow2(p0s.missEasy||0,p1s.missEasy||0,fp0Pots,fp1Pots,'Easy misses')+
+          mRow2(p0s.missMedium||0,p1s.missMedium||0,fp0Pots,fp1Pots,'Medium misses')+
+          mRow2(p0s.missHard||0,p1s.missHard||0,fp0Pots,fp1Pots,'Hard misses')+
           '</div>';
         return '<div class="frame-detail-item">'+
           '<button class="btn-frame-detail" onclick="toggleFrameDetail(\''+key+'\')">'+
@@ -678,6 +707,12 @@ function renderHistory(){
         '<span class="sr-val'+w1c+'">'+v1+'</span>'+
       '</div>';
     };
+    const mRowSr = (n0, n1, t0, t1, lbl) => {
+      const fmt = (n, t) => t > 0 ? n + ' (' + Math.round(n*100/t) + '%)' : String(n);
+      const w0c = n0 < n1 ? ' sr-win' : '';
+      const w1c = n1 < n0 ? ' sr-win' : '';
+      return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0,t0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1,t1)+'</span></div>';
+    };
 
     return '<div class="history-card" id="hcard-'+i+'">'+
       '<div class="card-date">'+m.date+' '+m.time+' &middot; '+total+' frame'+(total!==1?'s':'')+'</div>'+
@@ -693,10 +728,11 @@ function renderHistory(){
         sr(m.p0Avg||0,   m.p1Avg||0,   'Avg break')+
         sr(m.p0Centuries||0, m.p1Centuries||0, '100+ breaks')+
         sr(m.p0Fifties||0,   m.p1Fifties||0,   '50+ breaks')+
+        sr(m.p0PotCount||0, m.p1PotCount||0, 'Total shots')+
         sr(m.p0Fouls||0, m.p1Fouls||0, 'Fouls', true)+
-        sr(m.p0MissEasy||0, m.p1MissEasy||0, 'Easy misses')+
-        sr(m.p0MissMedium||0, m.p1MissMedium||0, 'Medium misses')+
-        sr(m.p0MissHard||0, m.p1MissHard||0, 'Hard misses')+
+        mRowSr(m.p0MissEasy||0, m.p1MissEasy||0, m.p0PotCount||0, m.p1PotCount||0, 'Easy misses')+
+        mRowSr(m.p0MissMedium||0, m.p1MissMedium||0, m.p0PotCount||0, m.p1PotCount||0, 'Medium misses')+
+        mRowSr(m.p0MissHard||0, m.p1MissHard||0, m.p0PotCount||0, m.p1PotCount||0, 'Hard misses')+
       '</div>'+
       frameBreakdown+
     '</div>';

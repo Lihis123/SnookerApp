@@ -150,6 +150,7 @@ html, body {
 .ball-btn:not(.disabled):hover { transform:translateY(-3px); }
 .ball-btn:not(.disabled):active { transform:scale(0.92); }
 .ball-btn.disabled { opacity:0.2; cursor:default; box-shadow:none; }
+.ball-btn.ball-potted { opacity:0.28; cursor:default; box-shadow:none; filter:grayscale(0.5); }
 .ball-btn .ball-name { font-size:0.67rem; font-weight:600; letter-spacing:0.3px; }
 .ball-btn .ball-pts  { font-size:1.3rem; font-weight:700; line-height:1; }
 
