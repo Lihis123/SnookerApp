@@ -604,7 +604,8 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
       sr(p0b.filter(b=>b>=20).length, p1b.filter(b=>b>=20).length, '20+ breaks') +
       head('Visits') +
       sr(p0s.visits||0, p1s.visits||0, 'Visits') +
-      sr(sp0+'% ('+fmtTime(p0s.visitTimeMs||0)+')', sp1+'% ('+fmtTime(p1s.visitTimeMs||0)+')', 'Scoring visit %') +
+      sr(fmtTime(p0s.visitTimeMs||0), fmtTime(p1s.visitTimeMs||0), 'Visit time') +
+      sr(sp0+'%', sp1+'%', 'Scoring visit %') +
       head('Pots') +
       sr(potPct0, potPct1, 'Pot %') +
       sr(posPct0, posPct1, 'Positional %') +
