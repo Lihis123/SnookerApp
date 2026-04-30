@@ -697,13 +697,15 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
   };
   const head = (label) => '<div class="stat-section">'+label+'</div>';
 
-  // Visits section: combined into header subtext e.g. "Visits  12 – 14"
-  const visitsSubhead = (v0, v1) =>
-    '<div class="stat-section" style="display:flex;justify-content:space-between;align-items:baseline;">'+
-    '<span class="sr-val" style="min-width:54px;text-align:center;font-size:0.68rem;color:var(--cream);">'+(v0||0)+'</span>'+
-    '<span style="flex:1;text-align:center;letter-spacing:1.2px;">Visits</span>'+
-    '<span class="sr-val" style="min-width:54px;text-align:center;font-size:0.68rem;color:var(--cream);">'+(v1||0)+'</span>'+
-    '</div>';
+  // Visits section: counts as side values, label = "Visits – totalFrameTime"
+  const visitsSubhead = (v0, v1, ms0, ms1) => {
+    const totalTime = fmtTime((ms0||0) + (ms1||0));
+    return '<div class="stat-section" style="display:flex;justify-content:space-between;align-items:baseline;">'+
+      '<span class="sr-val" style="min-width:54px;text-align:center;font-size:0.68rem;color:var(--cream);">'+(v0||0)+'</span>'+
+      '<span style="flex:1;text-align:center;letter-spacing:1.2px;">Visits \u2013 '+totalTime+'</span>'+
+      '<span class="sr-val" style="min-width:54px;text-align:center;font-size:0.68rem;color:var(--cream);">'+(v1||0)+'</span>'+
+      '</div>';
+  };
 
   // Color accuracy row: shows "N (X%)" count with percentage from attempts
   const colorAccRow = (n0, n1, m0, m1, lbl) => {
@@ -723,8 +725,7 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
       sr(p0Best||p0s.highestBreak||0, p1Best||p1s.highestBreak||0, 'Best break') +
       sr(avgB(p0b), avgB(p1b), 'Avg break') +
       sr(p0b.filter(b=>b>=20).length, p1b.filter(b=>b>=20).length, '20+ breaks') +
-      visitsSubhead(p0s.visits, p1s.visits) +
-      sr(fmtTime(p0s.visitTimeMs||0), fmtTime(p1s.visitTimeMs||0), 'Visit time') +
+      visitsSubhead(p0s.visits, p1s.visits, p0s.visitTimeMs, p1s.visitTimeMs) +
       sr(sp0+'%', sp1+'%', 'Scoring visit %') +
       head('Pots') +
       sr(potPct0, potPct1, 'Pot %') +
