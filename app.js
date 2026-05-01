@@ -217,9 +217,43 @@ function renderBalls(){
     btn.className = 'ball-btn' + (on ? ' ball-on' : ' disabled');
     btn.style.cssText = '--ball-base:' + ball.bg + ';--ball-fg:' + ball.fg + ';--ball-glow:' + ball.bg + 'aa;';
     btn.innerHTML = '';
-    if(on) btn.addEventListener('click', () => potBall(ball));
+    if(on) btn.addEventListener('click', () => { launchBallToLog(btn, ball); potBall(ball); });
     c.appendChild(btn);
   });
+}
+
+function launchBallToLog(btn, ball){
+  const btnRect = btn.getBoundingClientRect();
+  const logHeader = el('frame-log-header');
+  if(!logHeader) return;
+  const targetRect = logHeader.getBoundingClientRect();
+  const startX = btnRect.left + btnRect.width  / 2;
+  const startY = btnRect.top  + btnRect.height / 2;
+  const endX   = targetRect.left + targetRect.width  * 0.55;
+  const endY   = targetRect.top  + targetRect.height / 2;
+  const dx     = endX - startX;
+  const dy     = endY - startY;
+  const dist   = Math.hypot(dx, dy);
+  const size   = Math.min(btnRect.width, btnRect.height);
+  const fly = document.createElement('div');
+  fly.className = 'ball-fly';
+  fly.style.cssText =
+    'left:' + startX + 'px;' +
+    'top:'  + startY + 'px;' +
+    'width:' + size + 'px;' +
+    'height:' + size + 'px;' +
+    '--ball-base:' + ball.bg + ';' +
+    '--ball-glow:' + ball.bg + 'aa;';
+  document.body.appendChild(fly);
+  // Arc: always lift a bit regardless of direction
+  const arcLift = -Math.max(20, dist * 0.18);
+  const anim = fly.animate([
+    { transform: 'translate(-50%,-50%) scale(1)',                                                                                                              opacity: 1, offset: 0    },
+    { transform: 'translate(-50%,-50%) scale(1.18)',                                                                                                           opacity: 1, offset: 0.12 },
+    { transform: 'translate(calc(-50% + ' + (dx * 0.42) + 'px), calc(-50% + ' + (dy * 0.42 + arcLift) + 'px)) scale(0.86)',                                   opacity: 1, offset: 0.44 },
+    { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) scale(0.12)',                                                                opacity: 0, offset: 1    }
+  ], { duration: 540, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'forwards' });
+  anim.onfinish = () => fly.remove();
 }
 
 function isBallOn(id){
