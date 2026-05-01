@@ -242,8 +242,7 @@ body {
 
 .player-card {
   flex: 1;
-  min-height: 112px;
-  padding: 10px 8px;
+  padding: 10px 8px 12px;
   border-radius: 14px;
   text-align: center;
   background: rgba(0,0,0,0.2);
@@ -302,59 +301,24 @@ body {
 }
 
 .frame-score {
-  font-size: 3rem;
+  font-size: 3.6rem;
   font-weight: 800;
   color: #fff;
   line-height: 1;
+  letter-spacing: -1px;
 }
-
-.player-meta {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.meta-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  min-width: 0;
-  padding: 5px 6px;
-  border-radius: 8px;
-  background: rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-.meta-label {
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--dim);
-}
-
-.meta-value {
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--gold-light);
-  line-height: 1.05;
-}
-
-.player-card.eliminated-player .meta-label,
-.player-card.eliminated-player .meta-value { color: rgba(255,255,255,0.32); }
 
 /* Active bar */
 .active-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 7px;
-  margin: 10px 12px 0;
-  padding: 8px 10px;
+  gap: 6px;
+  margin: 8px 12px 0;
+  padding: 7px 10px;
   border-radius: 12px;
   border: 1px solid rgba(237,209,100,0.22);
-  background: linear-gradient(180deg, rgba(237,209,100,0.11) 0%, rgba(0,0,0,0.16) 100%);
+  background: linear-gradient(180deg, rgba(237,209,100,0.1) 0%, rgba(0,0,0,0.14) 100%);
   flex-shrink: 0;
 }
 
@@ -413,13 +377,22 @@ body {
   border: 1px solid rgba(255,255,255,0.13);
 }
 
+/* Quick action row (above balls) */
+.quick-action-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr;
+  gap: 8px;
+  padding: 10px 12px 0;
+  flex-shrink: 0;
+}
+
 /* Ball buttons */
 .balls-section {
   flex-shrink: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 14px 12px 10px;
+  padding: 10px 12px 6px;
 }
 
 .ball-buttons {
@@ -587,21 +560,12 @@ body {
   text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
-/* Action row */
-.action-row,
+/* Frame controls row */
 .frame-row {
   display: grid;
   gap: 8px;
   padding: 0 12px;
   flex-shrink: 0;
-}
-
-.action-row {
-  grid-template-columns: 1.4fr 2.4fr 1fr 1fr;
-  margin-bottom: 8px;
-}
-
-.frame-row {
   grid-template-columns: 2fr 1fr 1fr;
   margin-bottom: 8px;
 }
@@ -1458,7 +1422,7 @@ body {
   .balls-section { padding: 10px 8px 8px; }
   .ball-buttons { gap: 8px; }
 
-  .action-row,
+  .quick-action-row,
   .frame-row,
   .foul-panel,
   .correct-panel,
@@ -1514,12 +1478,11 @@ body {
   }
 
   /* Reorder right column: action buttons up top, panels inline, log fills rest */
-  .game-right .action-row        { order: 1; margin-top: 10px; }
-  .game-right .frame-row         { order: 2; }
-  .game-right #foul-panel        { order: 3; }
-  .game-right #correct-panel     { order: 4; }
-  .game-right #miss-picker       { order: 5; }
-  .game-right .frame-log-section { order: 6; }
+  .game-right .frame-row         { order: 1; margin-top: 10px; }
+  .game-right #foul-panel        { order: 2; }
+  .game-right #correct-panel     { order: 3; }
+  .game-right #miss-picker       { order: 4; }
+  .game-right .frame-log-section { order: 5; }
 
   /* ─ Header ───────────────────────────────────────────────────────── */
   .match-header { padding: 8px 16px; }
@@ -1527,10 +1490,7 @@ body {
 
   /* ─ Score cards ───────────────────────────────────────────────── */
   .score-panel { padding: 10px 10px 0; gap: 10px; }
-  .player-card { min-height: 126px; }
-  .frame-score { font-size: 3.2rem; }
-
-  .player-meta { max-width: 260px; margin-left: auto; margin-right: auto; }
+  .frame-score { font-size: 3.4rem; }
 
   /* ─ Active bar ─────────────────────────────────────────────────── */
   .active-bar { margin: 8px 10px 0; }
@@ -1548,7 +1508,7 @@ body {
   .ball-buttons { gap: 12px; }
 
   /* ─ Right column: controls ────────────────────────────────────────── */
-  .action-row { padding: 0 10px; }
+  .quick-action-row { padding: 0 10px; }
   .frame-row  { padding: 0 10px; }
 
   .foul-panel,

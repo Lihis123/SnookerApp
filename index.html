@@ -62,19 +62,11 @@
       <div class="player-card" id="player-0-panel">
         <div class="player-name" id="p1-name-display">Player 1</div>
         <div class="frame-score" id="p1-score">0</div>
-        <div class="player-meta">
-          <div class="meta-item"><span class="meta-label">Break</span><span class="meta-value" id="p1-break">0</span></div>
-          <div class="meta-item"><span class="meta-label">Best</span><span class="meta-value" id="p1-best">0</span></div>
-        </div>
       </div>
       <div class="score-divider"></div>
       <div class="player-card" id="player-1-panel">
         <div class="player-name" id="p2-name-display">Player 2</div>
         <div class="frame-score" id="p2-score">0</div>
-        <div class="player-meta">
-          <div class="meta-item"><span class="meta-label">Break</span><span class="meta-value" id="p2-break">0</span></div>
-          <div class="meta-item"><span class="meta-label">Best</span><span class="meta-value" id="p2-best">0</span></div>
-        </div>
       </div>
     </div>
 
@@ -86,6 +78,14 @@
       <span id="phase-label" class="phase-label">15 reds on table</span>
       <span id="pts-remaining" class="pts-remaining">147 pts left</span>
       <span id="pts-diff" class="pts-diff">Level</span>
+    </div>
+
+    <!-- Quick action row above balls -->
+    <div class="quick-action-row">
+      <button class="btn-action btn-foul" onclick="showFoulPanel()">Foul</button>
+      <button class="btn-action btn-miss" onclick="endBreak()">Miss / Safety</button>
+      <button class="btn-action btn-switch" onclick="switchPlayer()" title="Switch player">&#8644;</button>
+      <button class="btn-action btn-undo" onclick="undoLastBall()" title="Undo">&#8617;</button>
     </div>
 
     <!-- Ball Buttons -->
@@ -107,14 +107,6 @@
         <button class="foul-btn foul-6" onclick="applyFoul(6)"><span class="foul-val">6</span></button>
         <button class="foul-btn foul-7" onclick="applyFoul(7)"><span class="foul-val">7</span></button>
       </div>
-    </div>
-
-    <!-- Actions -->
-    <div class="action-row">
-      <button class="btn-action btn-foul" onclick="showFoulPanel()">Foul</button>
-      <button class="btn-action btn-miss" onclick="endBreak()">Miss / Safety</button>
-      <button class="btn-action btn-switch" onclick="switchPlayer()" title="Switch player">&#8644;</button>
-      <button class="btn-action btn-undo" onclick="undoLastBall()" title="Undo">&#8617;</button>
     </div>
 
     <!-- Frame controls -->
