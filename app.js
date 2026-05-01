@@ -90,6 +90,8 @@ function startMatch(){
 }
 
 let _visitTimerInterval = null;
+let _correctPanelIdleTimeout = null;
+
 function startVisitTimer(){
   if(_visitTimerInterval) return;
   _visitTimerInterval = setInterval(updateVisitTimer, 250);
@@ -205,19 +207,15 @@ function renderBalls(){
       if(idx >= 0 && idx < state.colorSeqIdx){
         const gb = document.createElement('button');
         gb.className = 'ball-btn ball-potted';
-        gb.style.cssText = 'background:' + ball.bg + ';color:' + ball.fg;
+        gb.style.cssText = '--ball-base:' + ball.bg + ';--ball-fg:' + ball.fg + ';';
         c.appendChild(gb);
         return;
       }
     }
     const on = isBallOn(ball.id);
     const btn = document.createElement('button');
-    btn.className = 'ball-btn' + (on ? '' : ' disabled');
-    btn.style.cssText = 'background:' + ball.bg + ';color:' + ball.fg;
-    if(on){
-      btn.style.borderColor = 'rgba(255,255,255,0.75)';
-      btn.style.boxShadow = '0 0 16px ' + ball.bg + 'aa,0 5px 12px rgba(0,0,0,0.5),inset 0 2px 5px rgba(255,255,255,0.18)';
-    }
+    btn.className = 'ball-btn' + (on ? ' ball-on' : ' disabled');
+    btn.style.cssText = '--ball-base:' + ball.bg + ';--ball-fg:' + ball.fg + ';--ball-glow:' + ball.bg + 'aa;';
     btn.innerHTML = '';
     if(on) btn.addEventListener('click', () => potBall(ball));
     c.appendChild(btn);
@@ -957,7 +955,35 @@ function toggleFrameDetail(key){
 
 // ─── Frame correction ─────────────────────────────────────────────────────────
 
+function scheduleCorrectPanelAutoHide(){
+  clearCorrectPanelAutoHide();
+  _correctPanelIdleTimeout = setTimeout(() => {
+    const panel = el('correct-panel');
+    if(panel && !panel.classList.contains('hidden')) hideCorrectPanel();
+  }, 5000);
+}
+
+function clearCorrectPanelAutoHide(){
+  if(_correctPanelIdleTimeout){
+    clearTimeout(_correctPanelIdleTimeout);
+    _correctPanelIdleTimeout = null;
+  }
+}
+
+function bindCorrectPanelAutoHideEvents(){
+  const panel = el('correct-panel');
+  if(!panel || panel.dataset.autocloseBound === '1') return;
+  const keepAlive = () => {
+    if(!panel.classList.contains('hidden')) scheduleCorrectPanelAutoHide();
+  };
+  panel.addEventListener('pointerdown', keepAlive);
+  panel.addEventListener('pointermove', keepAlive);
+  panel.addEventListener('keydown', keepAlive);
+  panel.dataset.autocloseBound = '1';
+}
+
 function showCorrectPanel(){
+  bindCorrectPanelAutoHideEvents();
   if(!el('correct-panel').classList.contains('hidden')){
     hideCorrectPanel();
     return;
@@ -969,8 +995,13 @@ function showCorrectPanel(){
   el('corr-cur-score').textContent = state.players[cp].score;
   el('corr-reds').textContent      = state.redsRemaining;
   el('correct-panel').classList.remove('hidden');
+  scheduleCorrectPanelAutoHide();
 }
-function hideCorrectPanel(){ const cp=el('correct-panel'); if(cp) cp.classList.add('hidden'); }
+function hideCorrectPanel(){
+  clearCorrectPanelAutoHide();
+  const cp=el('correct-panel');
+  if(cp) cp.classList.add('hidden');
+}
 
 function applyCorrection(type){
   const p  = state.players;
@@ -999,6 +1030,7 @@ function applyCorrection(type){
   state.undoStack.push(snap);
   addLog('correction', 'Correction', desc, undefined);
   renderGame();
+  scheduleCorrectPanelAutoHide();
 }
 
 function confirmClearHistory(){

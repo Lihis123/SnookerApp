@@ -384,20 +384,47 @@ body {
   width: 100%;
   aspect-ratio: 1 / 1;
   border-radius: 999px;
-  border: 2px solid rgba(255,255,255,0.24);
+  border: 2px solid rgba(255,255,255,0.2);
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.26) 16%, rgba(255,255,255,0) 38%),
+    radial-gradient(circle at 68% 72%, rgba(0,0,0,0.36) 0%, rgba(0,0,0,0) 44%),
+    radial-gradient(circle at 50% 50%, var(--ball-base, #888) 0%, color-mix(in srgb, var(--ball-base, #888) 72%, #000 28%) 100%);
   cursor: pointer;
-  transition: transform 0.12s, box-shadow 0.15s, opacity 0.15s, filter 0.15s;
-  box-shadow: 0 8px 14px rgba(0,0,0,0.4), inset 0 3px 7px rgba(255,255,255,0.2);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease, opacity 0.18s, filter 0.18s;
+  box-shadow:
+    0 9px 14px rgba(0,0,0,0.4),
+    inset 0 2px 6px rgba(255,255,255,0.2),
+    inset 0 -8px 12px rgba(0,0,0,0.24);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  will-change: transform, box-shadow;
+}
+
+.ball-btn.ball-on {
+  border-color: rgba(255,255,255,0.82);
+  box-shadow:
+    0 0 20px var(--ball-glow, rgba(255,255,255,0.35)),
+    0 10px 16px rgba(0,0,0,0.46),
+    inset 0 2px 6px rgba(255,255,255,0.24),
+    inset 0 -9px 13px rgba(0,0,0,0.24);
 }
 
 .ball-btn:not(.disabled):hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px) scale(1.015);
+  box-shadow:
+    0 0 22px var(--ball-glow, rgba(255,255,255,0.35)),
+    0 12px 18px rgba(0,0,0,0.5),
+    inset 0 2px 7px rgba(255,255,255,0.25),
+    inset 0 -9px 14px rgba(0,0,0,0.24);
 }
 
 .ball-btn:not(.disabled):active {
-  transform: scale(0.95);
+  transform: translateY(1px) scale(0.93);
+  box-shadow:
+    0 2px 6px rgba(0,0,0,0.38),
+    inset 0 1px 4px rgba(255,255,255,0.18),
+    inset 0 -5px 9px rgba(0,0,0,0.3);
+  filter: saturate(1.08);
 }
 
 .ball-btn.disabled {
@@ -410,7 +437,7 @@ body {
   opacity: 0.25;
   cursor: default;
   box-shadow: none;
-  filter: grayscale(0.55);
+  filter: grayscale(0.55) brightness(0.82);
 }
 
 /* Foul panel */
