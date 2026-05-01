@@ -161,6 +161,17 @@ body {
     linear-gradient(180deg, var(--felt) 0%, var(--felt-mid) 58%, var(--felt-dark) 100%);
 }
 
+/* Two-column layout plumbing ─ portrait: wrappers are transparent */
+.game-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.game-left,
+.game-right { display: contents; }
+
 .match-header {
   display: flex;
   align-items: center;
@@ -1369,4 +1380,109 @@ body {
 
   .foul-btn { width: 56px; height: 56px; }
   .miss-btn { width: 60px; height: 60px; }
+}
+
+/* ══ LANDSCAPE — iPad Air 2 and up, horizontal ════════════════════════════════
+   Left col: frame score + scores + ball table
+   Right col: action buttons → conditional panels → frame log
+   min-width:700 so small-phone landscape stays unaffected.              */
+@media (orientation: landscape) and (min-width: 700px) {
+
+  /* Full viewport width, no centering column */
+  .screen { max-width: 100%; }
+
+  /* Game container: exact viewport, outer overflow hidden */
+  .game-container {
+    height: 100vh;
+    min-height: unset;
+    overflow: hidden;
+  }
+
+  /* Side-by-side body */
+  .game-body {
+    flex-direction: row;
+    overflow: hidden;
+  }
+
+  /* ─ Left column: info + balls ─────────────────────────────────────── */
+  .game-left {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 52%;
+    overflow: hidden;
+    border-right: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* ─ Right column: controls + log, scrollable if panels pile up ───────── */
+  .game-right {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Reorder right column: action buttons up top, panels inline, log fills rest */
+  .game-right .action-row        { order: 1; margin-top: 10px; }
+  .game-right .frame-row         { order: 2; }
+  .game-right #foul-panel        { order: 3; }
+  .game-right #correct-panel     { order: 4; }
+  .game-right #miss-picker       { order: 5; }
+  .game-right .frame-log-section { order: 6; }
+
+  /* ─ Header ───────────────────────────────────────────────────────── */
+  .match-header { padding: 8px 16px; }
+  .frames-score { font-size: 2.05rem; letter-spacing: 3px; }
+
+  /* ─ Score cards ───────────────────────────────────────────────── */
+  .score-panel { padding: 10px 10px 0; gap: 10px; }
+  .player-card { min-height: 100px; }
+  .frame-score { font-size: 3.2rem; }
+
+  /* ─ Active bar ─────────────────────────────────────────────────── */
+  .active-bar { margin: 8px 10px 0; }
+
+  /* ─ Balls: fill remaining left-column height, centered ───────────────── */
+  .balls-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    padding: 12px 10px 14px;
+  }
+
+  /* 4-col × 2-row grid at 52vw ≈ 120px per ball — large, comfortable touch targets */
+  .ball-buttons { gap: 12px; }
+
+  /* ─ Right column: controls ────────────────────────────────────────── */
+  .action-row { padding: 0 10px; }
+  .frame-row  { padding: 0 10px; }
+
+  .foul-panel,
+  .correct-panel,
+  .miss-picker { margin-left: 10px; margin-right: 10px; }
+
+  .foul-btn { width: 68px; height: 68px; }
+  .miss-btn { width: 70px; height: 70px; }
+
+  .btn-action,
+  .btn-frame-end,
+  .btn-concede,
+  .btn-correct { min-height: 50px; font-size: 0.92rem; }
+
+  /* ─ Frame log: no height cap, fills remaining column ────────────────── */
+  .frame-log-section { margin: 0 10px 10px; }
+  .frame-log-list    { max-height: none; }
+
+  /* ─ History: wider card layout ───────────────────────────────────── */
+  .history-list { max-width: 900px; margin-left: auto; margin-right: auto; }
+
+  /* ─ Setup: keep it centred ───────────────────────────────────────── */
+  .setup-container {
+    max-width: 460px;
+    margin-left: auto;
+    margin-right: auto;
+    justify-content: center;
+  }
 }
