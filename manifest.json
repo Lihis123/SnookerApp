@@ -3,6 +3,7 @@
   "short_name": "Snooker",
   "description": "Snooker score and statistics tracker",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0e2c1d",
   "theme_color": "#1f7640",
