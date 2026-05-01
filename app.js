@@ -375,6 +375,13 @@ function addLog(type, player, desc, pts, playerIdx, ballId, balls){
 function potBall(ball){
   // Guard against stale click events (e.g. rapid double-clicks)
   if(!isBallOn(ball.id)) return;
+  // If the miss picker is still open and the next shot is already being played,
+  // count that as a miss for the previous player before processing this pot.
+  const missPicker = el('miss-picker');
+  if(missPicker && !missPicker.classList.contains('hidden')){
+    commitMiss(state.currentPlayer, 'easy');
+    if(!isBallOn(ball.id)) return;
+  }
   // Cancel any open miss picker / panels — user is potting instead
   cancelMissPicker();
   hideFoulPanel();
