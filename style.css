@@ -580,34 +580,41 @@ body {
   gap: 8px;
   padding: 0 12px;
   flex-shrink: 0;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 8px;
 }
 
 .btn-action,
-.btn-frame-end,
 .btn-concede,
 .btn-correct {
   min-height: 45px;
   border-radius: 11px;
-  border: 1px solid transparent;
+  border: 1px solid rgba(255,255,255,0.18);
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
+  background: rgba(255,255,255,0.07);
+  color: var(--cream);
   transition: transform 0.12s, background 0.18s, border-color 0.18s, filter 0.18s;
 }
 
 .btn-action:active,
-.btn-frame-end:active,
 .btn-concede:active,
 .btn-correct:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
+}
+
+.btn-action:hover,
+.btn-concede:hover,
+.btn-correct:hover {
+  background: rgba(255,255,255,0.13);
 }
 
 .btn-foul {
   background: rgba(150,24,24,0.72);
   color: #fff;
-  border-color: rgba(255,120,120,0.26);
+  border-color: rgba(255,120,120,0.3);
+  font-size: 1rem;
 }
 
 .btn-foul:hover { filter: brightness(1.1); }
@@ -616,6 +623,7 @@ body {
   background: rgba(255,255,255,0.1);
   color: var(--cream);
   border-color: rgba(255,255,255,0.24);
+  font-size: 1rem;
 }
 
 .btn-miss:hover { background: rgba(255,255,255,0.16); }
@@ -630,13 +638,13 @@ body {
 .btn-switch:hover { background: rgba(255,255,255,0.14); }
 
 .btn-undo {
-  background: rgba(237,209,100,0.13);
-  color: var(--gold-light);
-  border-color: rgba(237,209,100,0.35);
+  background: rgba(255,255,255,0.08);
+  color: var(--cream);
+  border-color: rgba(255,255,255,0.2);
   font-size: 1.1rem;
 }
 
-.btn-undo:hover { background: rgba(237,209,100,0.24); }
+.btn-undo:hover { background: rgba(255,255,255,0.14); }
 
 .btn-frame-end {
   background: rgba(237,209,100,0.08);
@@ -647,25 +655,22 @@ body {
 .btn-frame-end:hover { background: rgba(237,209,100,0.16); }
 
 .btn-concede {
-  background: rgba(255,255,255,0.05);
-  color: var(--dim);
-  border-color: rgba(255,255,255,0.15);
-  font-size: 0.82rem;
+  color: rgba(255,170,170,0.9);
+  border-color: rgba(255,100,100,0.25);
+  background: rgba(150,24,24,0.18);
 }
 
 .btn-concede:hover {
-  background: rgba(255,255,255,0.1);
-  color: var(--cream);
+  background: rgba(150,24,24,0.32);
 }
 
 .btn-correct {
-  background: rgba(200,160,30,0.16);
   color: var(--gold-light);
   border-color: rgba(200,160,30,0.36);
-  font-size: 0.82rem;
+  background: rgba(200,160,30,0.1);
 }
 
-.btn-correct:hover { background: rgba(200,160,30,0.26); }
+.btn-correct:hover { background: rgba(200,160,30,0.2); }
 
 /* Correction panel */
 .correct-panel {
@@ -1195,6 +1200,53 @@ body {
 
 .stat-section:first-child { margin-top: 0; }
 
+/* Compact colour balls strip */
+.color-balls-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 10px;
+  padding: 6px 4px 2px;
+}
+
+.cball {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.cball-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cball-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.2);
+}
+
+.cball-lbl {
+  font-size: 0.6rem;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.cball-n {
+  font-size: 0.8rem;
+  font-weight: 700;
+  min-width: 14px;
+  text-align: center;
+  color: var(--cream);
+}
+
+.cball-n.sr-win { color: var(--gold-light); }
+
 /* Frame breakdown in history */
 .frame-breakdown {
   margin-top: 10px;
@@ -1419,7 +1471,7 @@ body {
   .foul-btn { width: 56px; height: 56px; }
   .miss-btn { width: 60px; height: 60px; }
 
-  .frame-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .frame-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /* ══ LANDSCAPE — iPad Air 2 and up, horizontal ════════════════════════════════

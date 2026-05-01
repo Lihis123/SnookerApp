@@ -116,9 +116,8 @@
     <div class="frame-row">
       <button class="btn-action btn-switch" onclick="switchPlayer()" title="Switch player">&#8644;</button>
       <button class="btn-action btn-undo" onclick="undoLastBall()" title="Undo">&#8617;</button>
-      <button class="btn-frame-end" onclick="confirmEndFrame()">End Frame</button>
-      <button class="btn-concede" onclick="confirmConcede()">Concede</button>
-      <button class="btn-correct" onclick="showCorrectPanel()">Correct</button>
+      <button class="btn-action btn-concede" onclick="confirmConcede()">Concede</button>
+      <button class="btn-action btn-correct" onclick="showCorrectPanel()">Correct</button>
     </div>
 
     <!-- Correction Panel -->
@@ -197,6 +196,20 @@
     <div class="fs-buttons">
       <button class="btn-primary" onclick="startNextFrame()">Start Next Frame</button>
       <button class="btn-secondary" onclick="endMatchFromSummary()">End Match</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CONCEDE DIALOG ═══ -->
+<div id="concede-dialog" class="dialog-overlay hidden">
+  <div class="dialog">
+    <p>Who concedes the frame?</p>
+    <div class="dialog-buttons">
+      <button class="btn-dialog-yes" id="concede-p0-btn" onclick="executeConcede(0)"></button>
+      <button class="btn-dialog-yes" id="concede-p1-btn" onclick="executeConcede(1)"></button>
+    </div>
+    <div style="text-align:center;margin-top:8px">
+      <button class="btn-dialog-no" onclick="hideConcede()">Cancel</button>
     </div>
   </div>
 </div>

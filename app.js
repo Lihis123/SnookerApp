@@ -714,12 +714,19 @@ function confirmEndFrame(){
 
 function confirmConcede(){
   cancelMissPicker(); hideFoulPanel(); hideCorrectPanel();
-  const cp  = state.currentPlayer;
-  const opp = 1 - cp;
-  showConfirm(
-    state.players[cp].name + ' concedes?\n' + state.players[opp].name + ' wins the frame.',
-    'Concede', () => resolveFrame(opp)
-  );
+  const p = state.players;
+  el('concede-p0-btn').textContent = p[0].name + ' concedes';
+  el('concede-p1-btn').textContent = p[1].name + ' concedes';
+  el('concede-dialog').classList.remove('hidden');
+}
+
+function executeConcede(concedeIdx){
+  el('concede-dialog').classList.add('hidden');
+  resolveFrame(1 - concedeIdx);
+}
+
+function hideConcede(){
+  el('concede-dialog').classList.add('hidden');
 }
 
 function resolveFrame(forcedWinner){
@@ -817,26 +824,40 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
   };
   const head = (label) => '<div class="stat-section">'+label+'</div>';
 
-  const visitsSubhead = (v0, v1, ms0, ms1) => {
-    const combined = (v0||0) + (v1||0);
-    const totalTime = fmtTime((ms0||0) + (ms1||0));
-    return head('Visits (' + combined + ') \u2013 ' + totalTime);
-  };
+  // Visits row: per-player count, total time in label
+  const totalTime = fmtTime((p0s.visitTimeMs||0) + (p1s.visitTimeMs||0));
+  const visRow = '<div class="stat-row">' +
+    '<span class="sr-val">'+(p0s.visits||0)+'</span>' +
+    '<span class="sr-lbl">Visits \u00b7 '+totalTime+'</span>' +
+    '<span class="sr-val">'+(p1s.visits||0)+'</span>' +
+    '</div>';
 
-  // Per-colour pot rows — only show colours that were actually potted
+  // Compact colour-balls strip — one pill per colour that was potted
   const colorDefs = [
-    [p0Pc.red||0,    p1Pc.red||0,    'Reds'],
-    [p0Pc.yellow||0, p1Pc.yellow||0, 'Yellows'],
-    [p0Pc.green||0,  p1Pc.green||0,  'Greens'],
-    [p0Pc.brown||0,  p1Pc.brown||0,  'Browns'],
-    [p0Pc.blue||0,   p1Pc.blue||0,   'Blues'],
-    [p0Pc.pink||0,   p1Pc.pink||0,   'Pinks'],
-    [p0Pc.black||0,  p1Pc.black||0,  'Blacks'],
+    [p0Pc.red||0,    p1Pc.red||0,    'Red',     BALLS[0].bg],
+    [p0Pc.yellow||0, p1Pc.yellow||0, 'Yellow',  BALLS[1].bg],
+    [p0Pc.green||0,  p1Pc.green||0,  'Green',   BALLS[2].bg],
+    [p0Pc.brown||0,  p1Pc.brown||0,  'Brown',   BALLS[3].bg],
+    [p0Pc.blue||0,   p1Pc.blue||0,   'Blue',    BALLS[4].bg],
+    [p0Pc.pink||0,   p1Pc.pink||0,   'Pink',    BALLS[5].bg],
+    [p0Pc.black||0,  p1Pc.black||0,  'Black',   BALLS[6].bg],
   ];
-  const colorRows = colorDefs
-    .filter(([n0, n1]) => n0 > 0 || n1 > 0)
-    .map(([n0, n1, lbl]) => sr(n0, n1, lbl))
-    .join('');
+  const activeBalls = colorDefs.filter(([n0, n1]) => n0 > 0 || n1 > 0);
+  const colorBallsStrip = activeBalls.length === 0 ? '' :
+    '<div class="color-balls-strip">' +
+    activeBalls.map(([n0, n1, lbl, bg]) => {
+      const dash = n => n > 0 ? String(n) : '\u2013';
+      const w0 = n0 > n1 ? ' sr-win' : '', w1 = n1 > n0 ? ' sr-win' : '';
+      return '<div class="cball">' +
+        '<div class="cball-row">' +
+          '<span class="cball-n'+w0+'">'+dash(n0)+'</span>' +
+          '<div class="cball-dot" style="background:'+bg+'"></div>' +
+          '<span class="cball-n'+w1+'">'+dash(n1)+'</span>' +
+        '</div>' +
+        '<span class="cball-lbl">'+lbl+'</span>' +
+      '</div>';
+    }).join('') +
+    '</div>';
 
   return '<div class="card-names-row"><span>'+esc(p0Name)+'</span><span></span><span>'+esc(p1Name)+'</span></div>' +
     '<div class="card-stats">' +
@@ -847,14 +868,10 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
       sr(p0b.filter(b=>b>=20).length, p1b.filter(b=>b>=20).length, '20+ breaks') +
       sr(potPct0, potPct1, 'Pot %') +
       sr(posPct0, posPct1, 'Positional %') +
-      sr(
-        p0Pots + (p0s.missEasy||0) + (p0s.missMedium||0) + (p0s.missHard||0) + (p0s.safetyShots||0) + (p0s.fouls||0),
-        p1Pots + (p1s.missEasy||0) + (p1s.missMedium||0) + (p1s.missHard||0) + (p1s.safetyShots||0) + (p1s.fouls||0),
-        'Total shots') +
       sr(p0Pots, p1Pots, 'Total pots') +
-      visitsSubhead(p0s.visits, p1s.visits, p0s.visitTimeMs, p1s.visitTimeMs) +
       sr(sp0+'%', sp1+'%', 'Scoring visit %') +
-      (colorRows ? head('Potted Balls') + colorRows : '') +
+      visRow +
+      (colorBallsStrip ? head('Potted Balls') + colorBallsStrip : '') +
       head('Misses & Safety') +
       pctRow(p0s.missEasy||0,   p1s.missEasy||0,   p0Pots, p1Pots, 'Easy misses',   true) +
       pctRow(p0s.missMedium||0, p1s.missMedium||0, p0Pots, p1Pots, 'Medium misses', true) +
