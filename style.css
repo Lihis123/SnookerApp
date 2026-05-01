@@ -577,7 +577,7 @@ body {
 /* Frame controls row */
 .frame-row {
   display: grid;
-  gap: 8px;
+  gap: 12px;
   padding: 0 12px;
   flex-shrink: 0;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -587,15 +587,21 @@ body {
 .btn-action,
 .btn-concede,
 .btn-correct {
-  min-height: 45px;
+  aspect-ratio: 1 / 1;
   border-radius: 11px;
   border: 1px solid rgba(255,255,255,0.18);
-  font-size: 0.88rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
   background: rgba(255,255,255,0.07);
   color: var(--cream);
   transition: transform 0.12s, background 0.18s, border-color 0.18s, filter 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+  padding: 4px;
 }
 
 .btn-action:active,
@@ -1471,7 +1477,7 @@ body {
   .foul-btn { width: 56px; height: 56px; }
   .miss-btn { width: 60px; height: 60px; }
 
-  .frame-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .frame-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 }
 
 /* ══ LANDSCAPE — iPad Air 2 and up, horizontal ════════════════════════════════
@@ -1515,12 +1521,10 @@ body {
     overflow-x: hidden;
   }
 
-  /* Reorder right column: action buttons up top, panels inline, log fills rest */
+  /* Reorder right column: frame controls first, correction panel, then log */
   .game-right .frame-row         { order: 1; margin-top: 10px; }
-  .game-right #foul-panel        { order: 2; }
-  .game-right #correct-panel     { order: 3; }
-  .game-right #miss-picker       { order: 4; }
-  .game-right .frame-log-section { order: 5; }
+  .game-right #correct-panel     { order: 2; }
+  .game-right .frame-log-section { order: 3; }
 
   /* ─ Header ───────────────────────────────────────────────────────── */
   .match-header { padding: 8px 16px; }
@@ -1547,7 +1551,7 @@ body {
 
   /* ─ Right column: controls ────────────────────────────────────────── */
   .quick-action-row { padding: 10px 10px 0; }
-  .frame-row  { padding: 0 10px; }
+  .frame-row  { padding: 0 10px; gap: 12px; }
 
   .foul-panel,
   .correct-panel,
@@ -1557,9 +1561,8 @@ body {
   .miss-btn { width: 70px; height: 70px; }
 
   .btn-action,
-  .btn-frame-end,
   .btn-concede,
-  .btn-correct { min-height: 50px; font-size: 0.82rem; }
+  .btn-correct { font-size: 0.78rem; }
 
   /* ─ Frame log: no height cap, fills remaining column ────────────────── */
   .frame-log-section { margin: 0 10px 10px; }

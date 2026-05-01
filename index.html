@@ -91,15 +91,7 @@
       <button class="btn-action btn-miss" onclick="endBreak()">Miss / Safety</button>
     </div>
 
-    <!-- Ball Buttons -->
-    <div class="balls-section">
-      <div id="ball-buttons" class="ball-buttons"></div>
-    </div>
-
-      </div><!-- /.game-left -->
-      <div class="game-right">
-
-    <!-- Foul Panel -->
+    <!-- Foul Panel (inline, below Foul button) -->
     <div id="foul-panel" class="foul-panel hidden">
       <div class="foul-header">
         <span class="foul-title">Foul — award points to opponent</span>
@@ -112,10 +104,32 @@
       </div>
     </div>
 
+    <!-- Miss difficulty picker (inline, below Miss button) -->
+    <div id="miss-picker" class="miss-picker hidden">
+      <div class="miss-picker-header">
+        <span id="miss-who-label">How difficult was the miss?</span>
+        <span id="miss-countdown" class="miss-countdown">10s</span>
+      </div>
+      <div class="miss-picker-btns">
+        <button class="miss-btn miss-easy"   onclick="selectMissDifficulty('easy')">Easy</button>
+        <button class="miss-btn miss-medium" onclick="selectMissDifficulty('medium')">Medium</button>
+        <button class="miss-btn miss-hard"   onclick="selectMissDifficulty('hard')">Hard</button>
+      </div>
+    </div>
+
+    <!-- Ball Buttons -->
+    <div class="balls-section">
+      <div id="ball-buttons" class="ball-buttons"></div>
+    </div>
+
+      </div><!-- /.game-left -->
+      <div class="game-right">
+
+
     <!-- Right-side controls -->
     <div class="frame-row">
-      <button class="btn-action btn-switch" onclick="switchPlayer()" title="Switch player">&#8644;</button>
-      <button class="btn-action btn-undo" onclick="undoLastBall()" title="Undo">&#8617;</button>
+      <button class="btn-action btn-switch" onclick="switchPlayer()">Switch</button>
+      <button class="btn-action btn-undo" onclick="undoLastBall()">Undo</button>
       <button class="btn-action btn-concede" onclick="confirmConcede()">Concede</button>
       <button class="btn-action btn-correct" onclick="showCorrectPanel()">Correct</button>
     </div>
@@ -142,19 +156,6 @@
             <button class="corr-btn corr-add" onclick="applyCorrection('add-pt')">+</button>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Miss difficulty picker -->
-    <div id="miss-picker" class="miss-picker hidden">
-      <div class="miss-picker-header">
-        <span id="miss-who-label">How difficult was the miss?</span>
-        <span id="miss-countdown" class="miss-countdown">10s</span>
-      </div>
-      <div class="miss-picker-btns">
-        <button class="miss-btn miss-easy"   onclick="selectMissDifficulty('easy')">Easy</button>
-        <button class="miss-btn miss-medium" onclick="selectMissDifficulty('medium')">Medium</button>
-        <button class="miss-btn miss-hard"   onclick="selectMissDifficulty('hard')">Hard</button>
       </div>
     </div>
 
