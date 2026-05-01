@@ -1156,9 +1156,10 @@ body {
 }
 
 .stat-row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1.8fr 1fr;
   align-items: center;
+  gap: 4px;
   font-size: 0.78rem;
   padding: 2px 0;
 }
@@ -1166,16 +1167,17 @@ body {
 .sr-lbl {
   color: var(--dim);
   font-size: 0.68rem;
-  flex: 1;
   text-align: center;
 }
 
 .sr-val {
-  min-width: 54px;
-  text-align: center;
   color: var(--cream);
   font-weight: 700;
+  font-size: 0.78rem;
 }
+
+.stat-row .sr-val:first-child { text-align: right; }
+.stat-row .sr-val:last-child  { text-align: left; }
 
 .sr-val.sr-win { color: var(--gold-light); }
 
@@ -1192,34 +1194,6 @@ body {
 }
 
 .stat-section:first-child { margin-top: 0; }
-
-/* Compact 2-col colour pots grid */
-.color-pots-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px 4px;
-  margin: 2px 0 3px;
-}
-.cp-cell {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.73rem;
-  padding: 2px 2px;
-}
-.cp-l {
-  flex: 1;
-  text-align: center;
-  color: var(--dim);
-  font-size: 0.63rem;
-}
-.cp-v {
-  min-width: 22px;
-  text-align: center;
-  color: var(--cream);
-  font-weight: 700;
-}
-.cp-v.sr-win { color: var(--gold-light); }
 
 /* Frame breakdown in history */
 .frame-breakdown {

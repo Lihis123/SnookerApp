@@ -788,17 +788,8 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
   const sp0 = (p0s.visits||0) > 0 ? Math.round((p0s.scoringVisits||0)/p0s.visits*100) : 0;
   const sp1 = (p1s.visits||0) > 0 ? Math.round((p1s.scoringVisits||0)/p1s.visits*100) : 0;
   const p0Pots = p0s.potCount || 0, p1Pots = p1s.potCount || 0;
-  const p0Pc = p0s.pottedByColor || {}, p1Pc = p1s.pottedByColor || {};
-  const p0mc = p0s.missCountByColor || {}, p1mc = p1s.missCountByColor || {};
-
-  // Per-color accuracy row: shows X% (pots / (pots + misses)) for that specific color
-  const accuracyRow = (n0, n1, m0, m1, lbl) => {
-    const t0 = n0 + m0, t1 = n1 + m1;
-    const fmt = (n, t) => t === 0 ? (n > 0 ? String(n) : '\u2013') : Math.round(n*100/t)+'%';
-    const r0 = t0 > 0 ? n0/t0 : 0, r1 = t1 > 0 ? n1/t1 : 0;
-    const w0c = r0 > r1 ? ' sr-win' : '', w1c = r1 > r0 ? ' sr-win' : '';
-    return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0,t0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1,t1)+'</span></div>';
-  };
+  const p0Pc = p0s.pottedByColor || {};
+  const p1Pc = p1s.pottedByColor || {};
 
   // Pot %: pots / (pots + intentional misses + fouls); safety excluded
   const p0Attempts = p0Pots + (p0s.missEasy||0) + (p0s.missMedium||0) + (p0s.missHard||0) + (p0s.fouls||0);
@@ -807,7 +798,6 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
   const potPct1 = p1Attempts > 0 ? Math.round(p1Pots * 100 / p1Attempts) + '%' : 'N/A';
 
   // Positional %: of all pots, how many led to another pot in the same visit
-  // = (potCount - scoringVisits) / potCount
   const posPots0 = Math.max(0, p0Pots - (p0s.scoringVisits||0));
   const posPots1 = Math.max(0, p1Pots - (p1s.scoringVisits||0));
   const posPct0 = p0Pots > 0 ? Math.round(posPots0 * 100 / p0Pots) + '%' : 'N/A';
@@ -827,50 +817,34 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
   };
   const head = (label) => '<div class="stat-section">'+label+'</div>';
 
-  // Visits section: single centred header "Visits (combined) - total time"
   const visitsSubhead = (v0, v1, ms0, ms1) => {
     const combined = (v0||0) + (v1||0);
     const totalTime = fmtTime((ms0||0) + (ms1||0));
     return head('Visits (' + combined + ') \u2013 ' + totalTime);
   };
 
-  // Per-colour pots are trustworthy, but missed-colour attribution is not,
-  // so these rows intentionally show counts only.
-  const colorAccRow = (n0, n1, _m0, _m1, lbl) => {
-    const fmt = n => n > 0 ? String(n) : '\u2013';
-    const w0c = n0 > n1 ? ' sr-win' : '';
-    const w1c = n1 > n0 ? ' sr-win' : '';
-    return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1)+'</span></div>';
-  };
-
-  // Compact 2-column grid for per-colour pots
-  const colorPairs = [
-    [p0Pc.red||0,    p1Pc.red||0,    'Red'],
-    [p0Pc.yellow||0, p1Pc.yellow||0, 'Yel'],
-    [p0Pc.green||0,  p1Pc.green||0,  'Grn'],
-    [p0Pc.brown||0,  p1Pc.brown||0,  'Brn'],
-    [p0Pc.blue||0,   p1Pc.blue||0,   'Blu'],
-    [p0Pc.pink||0,   p1Pc.pink||0,   'Pnk'],
-    [p0Pc.black||0,  p1Pc.black||0,  'Blk'],
+  // Per-colour pot rows — only show colours that were actually potted
+  const colorDefs = [
+    [p0Pc.red||0,    p1Pc.red||0,    'Reds'],
+    [p0Pc.yellow||0, p1Pc.yellow||0, 'Yellows'],
+    [p0Pc.green||0,  p1Pc.green||0,  'Greens'],
+    [p0Pc.brown||0,  p1Pc.brown||0,  'Browns'],
+    [p0Pc.blue||0,   p1Pc.blue||0,   'Blues'],
+    [p0Pc.pink||0,   p1Pc.pink||0,   'Pinks'],
+    [p0Pc.black||0,  p1Pc.black||0,  'Blacks'],
   ];
-  const colorGrid = '<div class="color-pots-grid">' +
-    colorPairs.map(([n0, n1, lbl]) => {
-      const f = n => n > 0 ? String(n) : '\u2013';
-      const w0 = n0 > n1 ? ' sr-win' : '', w1 = n1 > n0 ? ' sr-win' : '';
-      return '<div class="cp-cell"><span class="cp-v'+w0+'">'+f(n0)+'</span><span class="cp-l">'+lbl+'</span><span class="cp-v'+w1+'">'+f(n1)+'</span></div>';
-    }).join('') + '</div>';
+  const colorRows = colorDefs
+    .filter(([n0, n1]) => n0 > 0 || n1 > 0)
+    .map(([n0, n1, lbl]) => sr(n0, n1, lbl))
+    .join('');
 
   return '<div class="card-names-row"><span>'+esc(p0Name)+'</span><span></span><span>'+esc(p1Name)+'</span></div>' +
     '<div class="card-stats">' +
-      head('Score') +
+      head('Game Statistics') +
       sr(p0Score||0, p1Score||0, 'Total points') +
-      head('Breaks') +
       sr(p0Best||p0s.highestBreak||0, p1Best||p1s.highestBreak||0, 'Best break') +
       sr(avgB(p0b), avgB(p1b), 'Avg break') +
       sr(p0b.filter(b=>b>=20).length, p1b.filter(b=>b>=20).length, '20+ breaks') +
-      visitsSubhead(p0s.visits, p1s.visits, p0s.visitTimeMs, p1s.visitTimeMs) +
-      sr(sp0+'%', sp1+'%', 'Scoring visit %') +
-      head('Pots') +
       sr(potPct0, potPct1, 'Pot %') +
       sr(posPct0, posPct1, 'Positional %') +
       sr(
@@ -878,7 +852,9 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
         p1Pots + (p1s.missEasy||0) + (p1s.missMedium||0) + (p1s.missHard||0) + (p1s.safetyShots||0) + (p1s.fouls||0),
         'Total shots') +
       sr(p0Pots, p1Pots, 'Total pots') +
-      colorGrid +
+      visitsSubhead(p0s.visits, p1s.visits, p0s.visitTimeMs, p1s.visitTimeMs) +
+      sr(sp0+'%', sp1+'%', 'Scoring visit %') +
+      (colorRows ? head('Potted Balls') + colorRows : '') +
       head('Misses & Safety') +
       pctRow(p0s.missEasy||0,   p1s.missEasy||0,   p0Pots, p1Pots, 'Easy misses',   true) +
       pctRow(p0s.missMedium||0, p1s.missMedium||0, p0Pots, p1Pots, 'Medium misses', true) +
