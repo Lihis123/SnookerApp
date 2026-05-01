@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'snooker-v3';
+const CACHE_NAME = 'snooker-v4';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -28,17 +28,18 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'opaque') {
-          return response;
-        }
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        return response;
-      });
-    })
-  );
+  event.respondWith(networkFirst(event.request));
 });
+
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request, { cache: 'no-store' });
+    if (response && response.status === 200 && response.type !== 'opaque') {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (_) {
+    return caches.match(request);
+  }
+}

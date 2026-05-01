@@ -201,13 +201,10 @@ function renderGame(){
   el('p2-frames').textContent   = p[1].frames;
   el('p1-name-display').textContent = p[0].name;
   el('p2-name-display').textContent = p[1].name;
-  el('p1-break') && (el('p1-break').textContent = p[0].currentBreak);
-  el('p2-break') && (el('p2-break').textContent = p[1].currentBreak);
-  el('p1-best')  && (el('p1-best').textContent  = p[0].bestBreak);
-  el('p2-best')  && (el('p2-best').textContent  = p[1].bestBreak);
   el('p1-score').textContent    = p[0].score;
   el('p2-score').textContent    = p[1].score;
   el('pts-remaining').textContent = ptsLeft() + ' pts left';
+  el('reds-left') && (el('reds-left').textContent = redsDesc());
   const d = p[0].score - p[1].score;
   el('pts-diff').textContent = d === 0 ? 'Level' : (d > 0 ? p[0].name + ' +' + d : p[1].name + ' +' + (-d));
 
@@ -253,14 +250,19 @@ function ptsLeft(){
 
 function phaseDesc(){
   if(state.awaiting === 'red')
-    return state.redsRemaining + ' red' + (state.redsRemaining !== 1 ? 's' : '') + ' on table';
+    return 'Pot a red';
   if(state.awaiting === 'color'){
-    const r = state.redsRemaining;
-    return 'Pot a colour' + (r > 0 ? ' — ' + r + ' red' + (r !== 1 ? 's' : '') + ' left' : ' — colours only');
+    return 'Pot a colour';
   }
   if(state.colorSeqIdx >= COLOR_SEQ.length) return 'Frame complete';
   const b = ballById(COLOR_SEQ[state.colorSeqIdx]);
-  return 'Colours: pot ' + b.name + ' (' + b.value + ')';
+  return 'Pot ' + b.name + ' (' + b.value + ')';
+}
+
+function redsDesc(){
+  if(state.awaiting === 'sequence') return 'Colours only';
+  const r = state.redsRemaining;
+  return r + ' red' + (r !== 1 ? 's' : '') + ' left';
 }
 
 function renderBalls(){
