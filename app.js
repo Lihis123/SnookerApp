@@ -821,14 +821,13 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
     return head('Visits (' + combined + ') \u2013 ' + totalTime);
   };
 
-  // Color accuracy row: shows "N (X%)" count with percentage from attempts
-  const colorAccRow = (n0, n1, m0, m1, lbl) => {
-    const t0 = n0 + m0, t1 = n1 + m1;
-    const fmt = (n, t) => t === 0 ? (n > 0 ? String(n) : '\u2013') : n + ' ('+Math.round(n*100/t)+'%)';
-    const r0 = t0 > 0 ? n0/t0 : 0, r1 = t1 > 0 ? n1/t1 : 0;
-    const w0c = (n0 > n1 || r0 > r1) && (n0 > 0 || n1 > 0) ? ' sr-win' : '';
-    const w1c = (n1 > n0 || r1 > r0) && (n0 > 0 || n1 > 0) ? ' sr-win' : '';
-    return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0,t0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1,t1)+'</span></div>';
+  // Per-colour pots are trustworthy, but missed-colour attribution is not,
+  // so these rows intentionally show counts only.
+  const colorAccRow = (n0, n1, _m0, _m1, lbl) => {
+    const fmt = n => n > 0 ? String(n) : '\u2013';
+    const w0c = n0 > n1 ? ' sr-win' : '';
+    const w1c = n1 > n0 ? ' sr-win' : '';
+    return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1)+'</span></div>';
   };
 
   return '<div class="card-names-row"><span>'+esc(p0Name)+'</span><span></span><span>'+esc(p1Name)+'</span></div>' +
