@@ -56,10 +56,18 @@ let state = {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 (function init(){
+  // Instant start: seed from localStorage while server responds
   try {
     const s = localStorage.getItem(STORAGE_KEY);
     if(s) state.matchHistory = JSON.parse(s);
   } catch(_){ state.matchHistory = []; }
+  // Server is the source of truth — overwrite once loaded
+  if(typeof fetch !== 'undefined'){
+    fetch('/api/history')
+      .then(r => { if(!r.ok) throw new Error(); return r.json(); })
+      .then(data => { if(Array.isArray(data)) state.matchHistory = data; })
+      .catch(() => {}); // offline / no server: keep localStorage data
+  }
 })();
 
 // ─── Screens ──────────────────────────────────────────────────────────────────
@@ -1073,7 +1081,17 @@ function confirmClearHistory(){
 }
 
 function persistHistory(){
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.matchHistory)); }catch(_){}
+  const payload = JSON.stringify(state.matchHistory);
+  // Primary: save to disk via server
+  if(typeof fetch !== 'undefined'){
+    fetch('/api/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload
+    }).catch(() => {});
+  }
+  // Fallback: also keep in localStorage in case server is temporarily down
+  try{ localStorage.setItem(STORAGE_KEY, payload); }catch(_){}
 }
 
 // ─── Confirm dialog ───────────────────────────────────────────────────────────
