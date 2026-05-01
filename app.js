@@ -152,7 +152,10 @@ function renderGame(){
       const b = ballById(bid);
       return b ? '<span class="turn-ball" style="background:'+b.bg+';color:'+b.fg+'"></span>' : '';
     }).join('');
-    logHeader.innerHTML = 'Log' + (tbHtml ? '<span class="turn-balls-strip">' + tbHtml + '</span>' : '');
+    const cb = p[cp].currentBreak || 0;
+    logHeader.innerHTML = 'Log' +
+      (tbHtml ? '<span class="turn-balls-strip">' + tbHtml + '</span>' : '') +
+      (tbHtml ? '<span class="turn-break">' + cb + '</span>' : '');
   }
 
   // Eliminated: trailing player can't catch up even if they pot everything remaining
