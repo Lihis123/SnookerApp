@@ -18,39 +18,44 @@
 <!-- ═══ SETUP ═══ -->
 <div id="screen-setup" class="screen active">
   <div class="setup-container">
-    <div class="setup-logo">
-      <div class="logo-ball"></div>
-      <h1>Snooker Tracker</h1>
-    </div>
-
-    <!-- Player slots -->
-    <div class="player-slots">
-      <div class="player-slot" id="slot-0" onclick="openPlayerPicker(0)">
-        <span class="slot-label">Player 1</span>
-        <span class="slot-name slot-placeholder" id="slot-name-0">Tap to select</span>
+    <div class="setup-card">
+      <div class="setup-logo">
+        <div class="logo-ball"></div>
+        <h1>Snooker Tracker</h1>
       </div>
-      <div class="vs-divider">VS</div>
-      <div class="player-slot" id="slot-1" onclick="openPlayerPicker(1)">
-        <span class="slot-label">Player 2</span>
-        <span class="slot-name slot-placeholder" id="slot-name-1">Tap to select</span>
+
+      <!-- Player slots -->
+      <div class="player-slots">
+        <button type="button" class="player-slot" id="slot-0" onclick="openPlayerPicker(0)">
+          <span class="slot-label">Player 1</span>
+          <span class="slot-name slot-placeholder" id="slot-name-0">Select player</span>
+        </button>
+        <div class="vs-divider">VS</div>
+        <button type="button" class="player-slot" id="slot-1" onclick="openPlayerPicker(1)">
+          <span class="slot-label">Player 2</span>
+          <span class="slot-name slot-placeholder" id="slot-name-1">Select player</span>
+        </button>
+      </div>
+
+      <div class="setup-actions">
+        <button type="button" class="btn-primary" onclick="startMatch()">Start Match</button>
+        <button type="button" class="btn-secondary" onclick="showHistory()">View History</button>
       </div>
     </div>
-
-    <button class="btn-primary" onclick="startMatch()">Start Match</button>
-    <button class="btn-secondary" onclick="showHistory()">View History</button>
   </div>
 
-  <!-- Player picker bottom-sheet -->
+  <!-- Player picker -->
   <div id="player-picker-overlay" class="player-picker-overlay hidden" onclick="closePlayerPickerOutside(event)">
     <div class="player-picker-card">
       <div class="picker-header">
         <span id="picker-title">Select Player 1</span>
-        <button class="picker-close" onclick="closePlayerPicker()">&#10005;</button>
+        <button type="button" class="picker-close" onclick="closePlayerPicker()" aria-label="Close player picker">&#10005;</button>
       </div>
       <div id="picker-prev-list" class="picker-prev-list"></div>
-      <div class="picker-new-row">
-        <input id="picker-new-input" class="picker-new-input" type="text" placeholder="New player name…" maxlength="20" autocomplete="off">
-        <button class="picker-add-btn" onclick="confirmNewPlayer()">Add</button>
+      <button type="button" class="picker-new-toggle" onclick="showNewPlayerInput()">Add new player</button>
+      <div id="picker-new-row" class="picker-new-row hidden">
+        <input id="picker-new-input" class="picker-new-input" type="text" placeholder="New player name" maxlength="20" autocomplete="off">
+        <button type="button" class="picker-add-btn" onclick="confirmNewPlayer()">Add</button>
       </div>
     </div>
   </div>

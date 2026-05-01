@@ -130,36 +130,53 @@ function showHistory(){ renderHistory(); showScreen('history'); }
 let _pickerSlot = 0;
 const _selectedPlayers = [null, null];
 
+function getKnownPlayers(){
+  try{
+    const names = JSON.parse(localStorage.getItem('snooker_players') || '[]');
+    return Array.isArray(names) ? names.filter(Boolean).slice(-30) : [];
+  } catch(_){
+    return [];
+  }
+}
+
+function rememberPlayerName(name){
+  if(!name || name === 'Player 1' || name === 'Player 2') return;
+  const names = getKnownPlayers().filter(n => n !== name);
+  names.push(name);
+  localStorage.setItem('snooker_players', JSON.stringify(names.slice(-30)));
+}
+
 function showSetup(){
   _selectedPlayers[0] = null;
   _selectedPlayers[1] = null;
   const s0 = el('slot-name-0'), s1 = el('slot-name-1');
-  if(s0){ s0.textContent = 'Tap to select'; s0.classList.add('slot-placeholder'); }
-  if(s1){ s1.textContent = 'Tap to select'; s1.classList.add('slot-placeholder'); }
+  if(s0){ s0.textContent = 'Select player'; s0.classList.add('slot-placeholder'); }
+  if(s1){ s1.textContent = 'Select player'; s1.classList.add('slot-placeholder'); }
   el('slot-0').classList.remove('slot-selected');
   el('slot-1').classList.remove('slot-selected');
+  closePlayerPicker();
   showScreen('setup');
 }
 
 function openPlayerPicker(slot){
   _pickerSlot = slot;
-  const names = JSON.parse(localStorage.getItem('snooker_players') || '[]').slice().reverse();
+  const names = getKnownPlayers().slice().reverse();
   const list = el('picker-prev-list');
   el('picker-title').textContent = 'Select Player ' + (slot + 1);
-  el('picker-new-input').value = '';
+  hideNewPlayerInput();
   if(names.length){
     list.innerHTML = names.map(n => '<button class="picker-chip">' + esc(n) + '</button>').join('');
     Array.from(list.querySelectorAll('.picker-chip')).forEach((btn, i) => {
+      if(names[i] === _selectedPlayers[slot]) btn.classList.add('is-current');
+      if(names[i] === _selectedPlayers[1 - slot]) btn.disabled = true;
       btn.addEventListener('click', () => selectPlayer(names[i]));
     });
   } else {
     list.innerHTML = '<span class="picker-empty">No previous players yet</span>';
   }
   el('player-picker-overlay').classList.remove('hidden');
-  // Handle Enter in new-name input
   const inp = el('picker-new-input');
   inp.onkeydown = e => { if(e.key === 'Enter'){ e.preventDefault(); confirmNewPlayer(); } };
-  setTimeout(() => inp.focus(), 80);
 }
 
 function closePlayerPicker(){
@@ -170,7 +187,26 @@ function closePlayerPickerOutside(e){
   if(e.target === el('player-picker-overlay')) closePlayerPicker();
 }
 
+function showNewPlayerInput(){
+  const row = el('picker-new-row');
+  const inp = el('picker-new-input');
+  row.classList.remove('hidden');
+  inp.value = '';
+  setTimeout(() => inp.focus(), 80);
+}
+
+function hideNewPlayerInput(){
+  const row = el('picker-new-row');
+  const inp = el('picker-new-input');
+  if(row) row.classList.add('hidden');
+  if(inp) inp.value = '';
+}
+
 function selectPlayer(name){
+  if(name === _selectedPlayers[1 - _pickerSlot]){
+    alert('Choose a different player for each side.');
+    return;
+  }
   _selectedPlayers[_pickerSlot] = name;
   const nameEl = el('slot-name-' + _pickerSlot);
   nameEl.textContent = name;
@@ -182,16 +218,21 @@ function selectPlayer(name){
 function confirmNewPlayer(){
   const name = el('picker-new-input').value.trim();
   if(!name) return;
+  if(name === _selectedPlayers[1 - _pickerSlot]){
+    alert('Choose a different player for each side.');
+    return;
+  }
+  rememberPlayerName(name);
   selectPlayer(name);
 }
+
+// ─── Setup ────────────────────────────────────────────────────────────────────
+
+function startMatch(){
   const p1 = (_selectedPlayers[0] || '').trim() || 'Player 1';
   const p2 = (_selectedPlayers[1] || '').trim() || 'Player 2';
-  // Remember player names for future autocomplete
-  const names = JSON.parse(localStorage.getItem('snooker_players') || '[]');
-  [p1, p2].forEach(n => {
-    if(n !== 'Player 1' && n !== 'Player 2' && !names.includes(n)) names.push(n);
-  });
-  localStorage.setItem('snooker_players', JSON.stringify(names.slice(-30)));
+  rememberPlayerName(p1);
+  rememberPlayerName(p2);
   state.players = [
     { name:p1, frames:0, score:0, currentBreak:0, bestBreak:0 },
     { name:p2, frames:0, score:0, currentBreak:0, bestBreak:0 },

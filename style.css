@@ -41,19 +41,40 @@ body {
   width: 100%;
   max-width: 560px;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .screen.active { display: block; }
 
 /* ══ SETUP ══ */
+#screen-setup { max-width: 100%; }
+
+#screen-setup.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  padding-top: calc(18px + env(safe-area-inset-top));
+  padding-right: calc(18px + env(safe-area-inset-right));
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  padding-left: calc(18px + env(safe-area-inset-left));
+}
+
 .setup-container {
+  width: min(100%, 760px);
+  min-height: unset;
+}
+
+.setup-card {
   width: 100%;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 18px;
-  padding: 36px 22px 30px;
+  gap: 20px;
+  padding: 28px;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: linear-gradient(180deg, rgba(23,68,43,0.92) 0%, rgba(13,42,27,0.92) 100%);
+  box-shadow: var(--shadow-strong);
 }
 
 .setup-logo {
@@ -81,21 +102,26 @@ body {
 
 /* Player slots */
 .player-slots {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
 }
 
 .player-slot {
-  flex: 1;
+  width: 100%;
+  min-height: 112px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 18px 16px;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px;
   border-radius: 14px;
   border: 1.5px solid rgba(255,255,255,0.15);
   background: rgba(255,255,255,0.07);
+  color: var(--cream);
+  text-align: left;
   cursor: pointer;
   transition: border-color 0.18s, background 0.18s;
   -webkit-tap-highlight-color: transparent;
@@ -120,7 +146,7 @@ body {
 }
 
 .slot-name {
-  font-size: 1.15rem;
+  font-size: 1.28rem;
   font-weight: 700;
   color: var(--cream);
   white-space: nowrap;
@@ -142,6 +168,12 @@ body {
   flex-shrink: 0;
 }
 
+.setup-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
 /* Player picker overlay */
 .player-picker-overlay {
   position: fixed;
@@ -149,19 +181,26 @@ body {
   background: rgba(0,0,0,0.65);
   z-index: 300;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  padding-top: calc(18px + env(safe-area-inset-top));
+  padding-right: calc(18px + env(safe-area-inset-right));
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  padding-left: calc(18px + env(safe-area-inset-left));
   -webkit-tap-highlight-color: transparent;
 }
 
 .player-picker-overlay.hidden { display: none; }
 
 .player-picker-card {
-  width: 100%;
-  max-height: 70vh;
-  background: #1e2e1e;
-  border-radius: 22px 22px 0 0;
-  border-top: 1px solid rgba(255,255,255,0.15);
-  padding: 20px 18px 34px;
+  width: min(100%, 560px);
+  max-height: min(78dvh, 590px);
+  background: linear-gradient(180deg, #1b4a31 0%, #102f20 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.16);
+  box-shadow: var(--shadow-strong);
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -197,25 +236,30 @@ body {
 }
 
 .picker-prev-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 10px;
   overflow-y: auto;
   flex: 1;
-  align-content: flex-start;
+  align-content: start;
   padding-bottom: 4px;
 }
 
 .picker-chip {
-  padding: 10px 20px;
-  border-radius: 22px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.2);
   background: rgba(255,255,255,0.09);
   color: var(--cream);
-  font-size: 1rem;
+  font-size: 1.02rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -223,6 +267,16 @@ body {
 .picker-chip:active {
   background: rgba(237,209,100,0.18);
   border-color: rgba(237,209,100,0.5);
+}
+
+.picker-chip.is-current {
+  background: rgba(237,209,100,0.2);
+  border-color: rgba(237,209,100,0.65);
+}
+
+.picker-chip:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .picker-empty {
@@ -235,6 +289,20 @@ body {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.picker-new-row.hidden { display: none; }
+
+.picker-new-toggle {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(237,209,100,0.42);
+  background: rgba(237,209,100,0.1);
+  color: var(--gold-light);
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .picker-new-input {
@@ -255,6 +323,7 @@ body {
 }
 
 .picker-add-btn {
+  min-width: 84px;
   padding: 13px 20px;
   border-radius: 12px;
   border: none;
@@ -1601,8 +1670,22 @@ body {
 @media (max-width: 420px) {
   .screen { max-width: 100%; }
 
-  .setup-container { padding: 30px 16px 24px; }
+  #screen-setup.active {
+    align-items: stretch;
+    padding: 14px;
+    padding-top: calc(14px + env(safe-area-inset-top));
+    padding-right: calc(14px + env(safe-area-inset-right));
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+    padding-left: calc(14px + env(safe-area-inset-left));
+  }
+
+  .setup-card { padding: 22px 16px; }
   .setup-logo h1 { font-size: 1.75rem; }
+  .player-slots { grid-template-columns: 1fr; gap: 8px; }
+  .player-slot { min-height: 88px; }
+  .vs-divider { text-align: center; }
+  .setup-actions { grid-template-columns: 1fr; }
+  .player-picker-card { padding: 18px 14px; }
 
   .match-header { padding: 10px 10px; }
   .frames-score { font-size: 2.1rem; letter-spacing: 3px; }
@@ -1735,11 +1818,24 @@ body {
   .history-list { max-width: 900px; margin-left: auto; margin-right: auto; }
 
   /* ─ Setup: keep it centred ───────────────────────────────────────── */
-  .setup-container {
-    max-width: 460px;
-    margin-left: auto;
-    margin-right: auto;
+  #screen-setup.active {
+    display: flex;
+    align-items: center;
     justify-content: center;
+  }
+
+  .setup-container {
+    width: min(100%, 760px);
+    max-width: none;
+    margin: 0 auto;
+  }
+
+  .setup-card {
+    padding: 24px;
+  }
+
+  .player-picker-card {
+    width: min(100%, 640px);
   }
 
   .overlay-card {
