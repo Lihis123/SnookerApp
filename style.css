@@ -434,10 +434,10 @@ body {
   aspect-ratio: 1 / 1;
   border-radius: 999px;
   border: 2px solid rgba(255,255,255,0.2);
-  background:
+  background-color: var(--ball-base, #888);
+  background-image:
     radial-gradient(circle at 32% 26%, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.26) 16%, rgba(255,255,255,0) 38%),
-    radial-gradient(circle at 68% 72%, rgba(0,0,0,0.36) 0%, rgba(0,0,0,0) 44%),
-    radial-gradient(circle at 50% 50%, var(--ball-base, #888) 0%, color-mix(in srgb, var(--ball-base, #888) 72%, #000 28%) 100%);
+    radial-gradient(circle at 68% 72%, rgba(0,0,0,0.36) 0%, rgba(0,0,0,0) 44%);
   cursor: pointer;
   transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease, opacity 0.18s, filter 0.18s;
   box-shadow:
@@ -495,10 +495,10 @@ body {
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
-  background:
+  background-color: var(--ball-base, #888);
+  background-image:
     radial-gradient(circle at 32% 26%, rgba(255,255,255,0.64) 0%, rgba(255,255,255,0.28) 18%, rgba(255,255,255,0) 40%),
-    radial-gradient(circle at 68% 72%, rgba(0,0,0,0.36) 0%, rgba(0,0,0,0) 45%),
-    radial-gradient(circle at 50% 50%, var(--ball-base, #888) 0%, color-mix(in srgb, var(--ball-base, #888) 70%, #000 30%) 100%);
+    radial-gradient(circle at 68% 72%, rgba(0,0,0,0.36) 0%, rgba(0,0,0,0) 45%);
   border: 2px solid rgba(255,255,255,0.55);
   box-shadow:
     0 0 18px var(--ball-glow, rgba(255,255,255,0.35)),
@@ -1202,8 +1202,8 @@ body {
 .sr-val.sr-win { color: var(--gold-light); }
 
 .stat-section {
-  margin-top: 8px;
-  padding: 4px 0 2px;
+  margin-top: 5px;
+  padding: 3px 0 2px;
   font-size: 0.68rem;
   font-weight: 800;
   color: var(--gold);
@@ -1214,6 +1214,34 @@ body {
 }
 
 .stat-section:first-child { margin-top: 0; }
+
+/* Compact 2-col colour pots grid */
+.color-pots-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px 4px;
+  margin: 2px 0 3px;
+}
+.cp-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.73rem;
+  padding: 2px 2px;
+}
+.cp-l {
+  flex: 1;
+  text-align: center;
+  color: var(--dim);
+  font-size: 0.63rem;
+}
+.cp-v {
+  min-width: 22px;
+  text-align: center;
+  color: var(--cream);
+  font-weight: 700;
+}
+.cp-v.sr-win { color: var(--gold-light); }
 
 /* Frame breakdown in history */
 .frame-breakdown {
@@ -1280,6 +1308,8 @@ body {
 .overlay-card {
   width: 100%;
   max-width: 390px;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
   border-radius: 18px;
   padding: 24px 20px;
   background: linear-gradient(180deg, #1a4b30 0%, #123624 100%);

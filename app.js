@@ -125,13 +125,24 @@ function showScreen(id){
   el('screen-'+id).classList.add('active');
 }
 function showHistory(){ renderHistory(); showScreen('history'); }
-function showSetup()  { showScreen('setup'); }
+function showSetup(){
+  const names = JSON.parse(localStorage.getItem('snooker_players') || '[]');
+  const dl = el('known-players');
+  if(dl) dl.innerHTML = names.map(n => '<option value="' + esc(n) + '">').join('');
+  showScreen('setup');
+}
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 
 function startMatch(){
   const p1 = el('player1-name').value.trim() || 'Player 1';
   const p2 = el('player2-name').value.trim() || 'Player 2';
+  // Remember player names for future autocomplete
+  const names = JSON.parse(localStorage.getItem('snooker_players') || '[]');
+  [p1, p2].forEach(n => {
+    if(n !== 'Player 1' && n !== 'Player 2' && !names.includes(n)) names.push(n);
+  });
+  localStorage.setItem('snooker_players', JSON.stringify(names.slice(-30)));
   state.players = [
     { name:p1, frames:0, score:0, currentBreak:0, bestBreak:0 },
     { name:p2, frames:0, score:0, currentBreak:0, bestBreak:0 },
@@ -379,7 +390,7 @@ function potBall(ball){
   // count that as a miss for the previous player before processing this pot.
   const missPicker = el('miss-picker');
   if(missPicker && !missPicker.classList.contains('hidden')){
-    commitMiss(state.currentPlayer, 'easy');
+    commitMiss(state.currentPlayer, 'safety');
     if(!isBallOn(ball.id)) return;
   }
   // Cancel any open miss picker / panels — user is potting instead
@@ -830,6 +841,23 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
     return '<div class="stat-row"><span class="sr-val'+w0c+'">'+fmt(n0)+'</span><span class="sr-lbl">'+lbl+'</span><span class="sr-val'+w1c+'">'+fmt(n1)+'</span></div>';
   };
 
+  // Compact 2-column grid for per-colour pots
+  const colorPairs = [
+    [p0Pc.red||0,    p1Pc.red||0,    'Red'],
+    [p0Pc.yellow||0, p1Pc.yellow||0, 'Yel'],
+    [p0Pc.green||0,  p1Pc.green||0,  'Grn'],
+    [p0Pc.brown||0,  p1Pc.brown||0,  'Brn'],
+    [p0Pc.blue||0,   p1Pc.blue||0,   'Blu'],
+    [p0Pc.pink||0,   p1Pc.pink||0,   'Pnk'],
+    [p0Pc.black||0,  p1Pc.black||0,  'Blk'],
+  ];
+  const colorGrid = '<div class="color-pots-grid">' +
+    colorPairs.map(([n0, n1, lbl]) => {
+      const f = n => n > 0 ? String(n) : '\u2013';
+      const w0 = n0 > n1 ? ' sr-win' : '', w1 = n1 > n0 ? ' sr-win' : '';
+      return '<div class="cp-cell"><span class="cp-v'+w0+'">'+f(n0)+'</span><span class="cp-l">'+lbl+'</span><span class="cp-v'+w1+'">'+f(n1)+'</span></div>';
+    }).join('') + '</div>';
+
   return '<div class="card-names-row"><span>'+esc(p0Name)+'</span><span></span><span>'+esc(p1Name)+'</span></div>' +
     '<div class="card-stats">' +
       head('Score') +
@@ -848,13 +876,7 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
         p1Pots + (p1s.missEasy||0) + (p1s.missMedium||0) + (p1s.missHard||0) + (p1s.safetyShots||0) + (p1s.fouls||0),
         'Total shots') +
       sr(p0Pots, p1Pots, 'Total pots') +
-      colorAccRow(p0Pc.red||0,    p1Pc.red||0,    p0mc.red||0,    p1mc.red||0,    'Reds') +
-      colorAccRow(p0Pc.yellow||0, p1Pc.yellow||0, p0mc.yellow||0, p1mc.yellow||0, 'Yellows') +
-      colorAccRow(p0Pc.green||0,  p1Pc.green||0,  p0mc.green||0,  p1mc.green||0,  'Greens') +
-      colorAccRow(p0Pc.brown||0,  p1Pc.brown||0,  p0mc.brown||0,  p1mc.brown||0,  'Browns') +
-      colorAccRow(p0Pc.blue||0,   p1Pc.blue||0,   p0mc.blue||0,   p1mc.blue||0,   'Blues') +
-      colorAccRow(p0Pc.pink||0,   p1Pc.pink||0,   p0mc.pink||0,   p1mc.pink||0,   'Pinks') +
-      colorAccRow(p0Pc.black||0,  p1Pc.black||0,  p0mc.black||0,  p1mc.black||0,  'Blacks') +
+      colorGrid +
       head('Misses & Safety') +
       pctRow(p0s.missEasy||0,   p1s.missEasy||0,   p0Pots, p1Pots, 'Easy misses',   true) +
       pctRow(p0s.missMedium||0, p1s.missMedium||0, p0Pots, p1Pots, 'Medium misses', true) +
