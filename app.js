@@ -876,7 +876,6 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
       pctRow(p0s.missEasy||0,   p1s.missEasy||0,   p0Pots, p1Pots, 'Easy misses',   true) +
       pctRow(p0s.missMedium||0, p1s.missMedium||0, p0Pots, p1Pots, 'Medium misses', true) +
       pctRow(p0s.missHard||0,   p1s.missHard||0,   p0Pots, p1Pots, 'Hard misses',   true) +
-      sr(p0s.safetyShots||0, p1s.safetyShots||0, 'Safety shots') +
       sr(p0s.fouls||0, p1s.fouls||0, 'Fouls', true) +
     '</div>';
 }
