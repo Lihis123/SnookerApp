@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'snooker-v4';
+const CACHE_NAME = 'snooker-v5';
 const PRECACHE_URLS = [
   './',
   './index.html',
