@@ -587,7 +587,7 @@ body {
 .btn-action,
 .btn-concede,
 .btn-correct {
-  aspect-ratio: 1 / 1;
+  min-height: 45px;
   border-radius: 11px;
   border: 1px solid rgba(255,255,255,0.18);
   font-size: 0.78rem;
@@ -602,6 +602,15 @@ body {
   text-align: center;
   line-height: 1.2;
   padding: 4px;
+}
+
+/* Square only for the 4 frame-row controls */
+.btn-switch,
+.btn-undo,
+.btn-concede,
+.btn-correct {
+  aspect-ratio: 1 / 1;
+  min-height: unset;
 }
 
 .btn-action:active,
