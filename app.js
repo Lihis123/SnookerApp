@@ -149,7 +149,9 @@ function startMatch(){
   ];
   state.currentPlayer  = 0;
   state.completedFrames = [];
-  state.matchSaved     = false;
+  state.matchId        = Date.now();
+  state.matchDate      = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  state.matchTime      = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
   resetFrameState();
   renderGame();
   showScreen('game');
@@ -782,6 +784,7 @@ function finaliseFrame(winner){
 
   state.completedFrames.push(frameRecord);
 
+  upsertMatchHistory();
   showFrameSummary(frameRecord);
 }
 
@@ -910,23 +913,17 @@ function endMatchFromSummary(){
 
 // ─── Match end ────────────────────────────────────────────────────────────────
 
-function saveMatch(){
-  if(state.matchSaved) return;
-  state.matchSaved = true;
-
+function buildMatchRecord(){
   const p = state.players;
   const cf = state.completedFrames;
-
   const allP0 = cf.flatMap(f => f.stats.p0.breaks);
   const allP1 = cf.flatMap(f => f.stats.p1.breaks);
   const avg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
-
-  // determine match winner by frames
   const matchWinner = p[0].frames > p[1].frames ? 0 : p[1].frames > p[0].frames ? 1 : -1;
-
-  const record = {
-    date:     new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
-    time:     new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+  return {
+    id:       state.matchId,
+    date:     state.matchDate,
+    time:     state.matchTime,
     p0Name:   p[0].name,
     p1Name:   p[1].name,
     p0Frames: p[0].frames,
@@ -968,11 +965,18 @@ function saveMatch(){
     p1SafetyShots: cf.reduce((s,f)=>s+(f.stats.p1.safetyShots||0),0),
     frames:   cf,
   };
+}
 
-  state.matchHistory.unshift(record);
+function upsertMatchHistory(){
+  const record = buildMatchRecord();
+  const idx = state.matchHistory.findIndex(m => m.id === state.matchId);
+  if(idx >= 0) state.matchHistory[idx] = record;
+  else state.matchHistory.unshift(record);
   persistHistory();
+}
 
-  // Take the player straight to the history page (full stats)
+function saveMatch(){
+  upsertMatchHistory();
   showHistory();
 }
 
