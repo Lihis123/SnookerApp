@@ -324,6 +324,16 @@ html, body {
 .log-entry.log-safety .log-desc { color:rgba(140,210,140,0.7); font-style:italic; }
 .log-entry.log-correction .log-who { color:rgba(180,130,255,0.9); }
 .log-entry.log-correction .log-desc { color:rgba(180,130,255,0.75); font-style:italic; }
+.log-entry.log-break-summary .log-desc { color:rgba(240,232,216,0.85); }
+.log-break-balls { display:inline-flex; align-items:center; gap:3px; margin-right:6px; }
+.log-break-ball {
+  display:inline-block;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,0.3);
+  box-shadow:0 1px 2px rgba(0,0,0,0.45);
+}
 
 /* ══ HISTORY ══ */
 .history-container { display:flex; flex-direction:column; min-height:100vh; }

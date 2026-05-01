@@ -243,6 +243,7 @@ function renderFrameLog(){
     else if(e.type === 'miss')  cls += ' log-miss';
     else if(e.type === 'safety') cls += ' log-safety';
     else if(e.type === 'correction') cls += ' log-correction';
+    else if(e.type === 'break-summary') cls += ' log-break-summary';
     if(e.playerIdx === 0) cls += ' log-p0';
     else if(e.playerIdx === 1) cls += ' log-p1';
     let descHtml;
@@ -250,6 +251,12 @@ function renderFrameLog(){
       const b = ballById(e.ballId);
       const style = b ? 'background:'+b.bg+';color:'+b.fg+';' : '';
       descHtml = 'potted <span class="log-ball" style="'+style+'">' + esc(e.desc) + '</span>';
+    } else if(e.type === 'break-summary'){
+      const ballsHtml = (e.balls || []).map(id => {
+        const b = ballById(id);
+        return b ? '<span class="log-break-ball" style="background:'+b.bg+'"></span>' : '';
+      }).join('');
+      descHtml = '<span class="log-break-balls">' + ballsHtml + '</span> break';
     } else {
       descHtml = esc(e.desc);
     }
@@ -262,8 +269,8 @@ function renderFrameLog(){
   box.scrollTop = box.scrollHeight;
 }
 
-function addLog(type, player, desc, pts, playerIdx, ballId){
-  state.frameLog.push({ type, player, desc, pts, playerIdx, ballId });
+function addLog(type, player, desc, pts, playerIdx, ballId, balls){
+  state.frameLog.push({ type, player, desc, pts, playerIdx, ballId, balls });
 }
 
 // ─── Potting ──────────────────────────────────────────────────────────────────
@@ -510,6 +517,7 @@ function commitVisit(countAsVisit){
   const cp  = state.currentPlayer;
   const sk  = cp === 0 ? 'p0' : 'p1';
   const val = state.visitScore;
+  const turnBalls = [...(state.currentTurnBalls || [])];
   const now = Date.now();
   if(state._visitStartMs){
     state.frameStats[sk].visitTimeMs += (now - state._visitStartMs);
@@ -522,6 +530,10 @@ function commitVisit(countAsVisit){
   if(val > 0){
     state.frameStats[sk].breaks.push(val);
     if(val > state.frameStats[sk].highestBreak) state.frameStats[sk].highestBreak = val;
+    // When a break ends, log the exact potted sequence and the break score.
+    if(countAsVisit !== false){
+      addLog('break-summary', state.players[cp].name, 'break', val, cp, undefined, turnBalls);
+    }
   }
 }
 
