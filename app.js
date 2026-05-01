@@ -139,6 +139,8 @@ function renderGame(){
   el('p1-score').textContent    = p[0].score;
   el('p2-score').textContent    = p[1].score;
   el('pts-remaining').textContent = ptsLeft() + ' pts left';
+  const d = p[0].score - p[1].score;
+  el('pts-diff').textContent = d === 0 ? 'Level' : (d > 0 ? p[0].name + ' +' + d : p[1].name + ' +' + (-d));
 
   el('player-0-panel').classList.toggle('active-player', cp === 0);
   el('player-1-panel').classList.toggle('active-player', cp === 1);

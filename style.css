@@ -144,6 +144,15 @@ html, body {
 }
 .phase-label { font-size:0.7rem; color:var(--dim); margin-left:auto; }
 .pts-remaining { font-size:0.68rem; color:var(--gold); font-weight:600; }
+.pts-diff {
+  font-size:0.68rem;
+  color:var(--cream);
+  font-weight:700;
+  padding:1px 7px;
+  border-radius:10px;
+  background:rgba(0,0,0,0.26);
+  border:1px solid rgba(255,255,255,0.14);
+}
 
 /* Ball buttons */
 .balls-section {
