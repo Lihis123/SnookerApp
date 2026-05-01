@@ -162,7 +162,11 @@
     <div class="history-header">
       <button class="btn-back" onclick="showSetup()">&#8592; Back</button>
       <h2>History</h2>
-      <button class="btn-clear-hist" onclick="confirmClearHistory()">Clear</button>
+      <div class="history-header-actions">
+        <button class="btn-hist-io" onclick="importHistory()" title="Import from file">&#8595; Import</button>
+        <button class="btn-hist-io btn-hist-export" onclick="exportHistory()" title="Export to file">&#8593; Export</button>
+        <button class="btn-clear-hist" onclick="confirmClearHistory()">Clear</button>
+      </div>
     </div>
     <div id="history-list" class="history-list"></div>
   </div>

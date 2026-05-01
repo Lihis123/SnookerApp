@@ -53,21 +53,49 @@ let state = {
   matchHistory: [],
 };
 
+// ─── IndexedDB persistence ───────────────────────────────────────────────────
+// IndexedDB survives cache/cookie clears; only wiped by explicit "Clear site data".
+
+const IDB_NAME    = 'SnookerTrackerDB';
+const IDB_VERSION = 1;
+const IDB_STORE   = 'history';
+
+function _openIDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE, { keyPath: 'id' });
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+function loadHistoryIDB(){
+  return _openIDB().then(db => new Promise((resolve, reject) => {
+    const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).get('matchHistory');
+    req.onsuccess = e => resolve((e.target.result && e.target.result.data) || null);
+    req.onerror   = e => reject(e.target.error);
+  })).catch(() => null);
+}
+
+function saveHistoryIDB(data){
+  _openIDB().then(db => {
+    db.transaction(IDB_STORE, 'readwrite').objectStore(IDB_STORE)
+      .put({ id: 'matchHistory', data });
+  }).catch(() => {});
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 (function init(){
-  // Instant start: seed from localStorage while server responds
+  // Instant start: seed from localStorage (synchronous)
   try {
     const s = localStorage.getItem(STORAGE_KEY);
     if(s) state.matchHistory = JSON.parse(s);
   } catch(_){ state.matchHistory = []; }
-  // Server is the source of truth — overwrite once loaded
-  if(typeof fetch !== 'undefined'){
-    fetch('/api/history')
-      .then(r => { if(!r.ok) throw new Error(); return r.json(); })
-      .then(data => { if(Array.isArray(data)) state.matchHistory = data; })
-      .catch(() => {}); // offline / no server: keep localStorage data
-  }
+  // IDB is the real store — overwrite once loaded (fast, same device)
+  loadHistoryIDB().then(data => {
+    if(Array.isArray(data)) state.matchHistory = data;
+  });
 })();
 
 // ─── Screens ──────────────────────────────────────────────────────────────────
@@ -1082,16 +1110,53 @@ function confirmClearHistory(){
 
 function persistHistory(){
   const payload = JSON.stringify(state.matchHistory);
-  // Primary: save to disk via server
-  if(typeof fetch !== 'undefined'){
-    fetch('/api/history', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: payload
-    }).catch(() => {});
-  }
-  // Fallback: also keep in localStorage in case server is temporarily down
+  // Primary: IndexedDB — persists through cache clears, lives on the device
+  saveHistoryIDB(state.matchHistory);
+  // Mirror to localStorage as quick-boot seed
   try{ localStorage.setItem(STORAGE_KEY, payload); }catch(_){}
+}
+
+// ─── Export / Import ─────────────────────────────────────────────────────────
+
+function exportHistory(){
+  if(!state.matchHistory.length){ alert('No history to export.'); return; }
+  const blob = new Blob([JSON.stringify(state.matchHistory, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'snooker-history-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importHistory(){
+  const input    = document.createElement('input');
+  input.type     = 'file';
+  input.accept   = '.json,application/json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader    = new FileReader();
+    reader.onload   = evt => {
+      try {
+        const data = JSON.parse(evt.target.result);
+        if(!Array.isArray(data)) throw new Error('Not an array');
+        showConfirm(
+          'Replace all history with ' + data.length + ' imported match' + (data.length !== 1 ? 'es' : '') + '?',
+          'Import',
+          () => { state.matchHistory = data; persistHistory(); renderHistory(); }
+        );
+      } catch(_) {
+        alert('Invalid history file — please choose a file exported from this app.');
+      }
+    };
+    reader.readAsText(file);
+  };
+  document.body.appendChild(input);
+  input.click();
+  document.body.removeChild(input);
 }
 
 // ─── Confirm dialog ───────────────────────────────────────────────────────────
