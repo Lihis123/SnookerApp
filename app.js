@@ -523,7 +523,7 @@ function commitVisit(countAsVisit){
     state.frameStats[sk].visitTimeMs += (now - state._visitStartMs);
   }
   state._visitStartMs = now;
-  if(countAsVisit !== false){
+  if(countAsVisit !== false || val > 0){
     state.frameStats[sk].visits++;
     if(val > 0) state.frameStats[sk].scoringVisits++;
   }
@@ -531,9 +531,7 @@ function commitVisit(countAsVisit){
     state.frameStats[sk].breaks.push(val);
     if(val > state.frameStats[sk].highestBreak) state.frameStats[sk].highestBreak = val;
     // When a break ends, log the exact potted sequence and the break score.
-    if(countAsVisit !== false){
-      addLog('break-summary', state.players[cp].name, 'break', val, cp, undefined, turnBalls);
-    }
+    addLog('break-summary', state.players[cp].name, 'break', val, cp, undefined, turnBalls);
   }
 }
 
@@ -1000,12 +998,7 @@ function applyCorrection(type){
   if(!desc) return; // no-op (e.g. tried to remove past 0)
   state.undoStack.push(snap);
   addLog('correction', 'Correction', desc, undefined);
-  // update score display live without closing panel
-  el('p1-score').textContent = p[0].score;
-  el('p2-score').textContent = p[1].score;
-  el('pts-remaining').textContent = ptsLeft() + ' pts left';
-  el('phase-label').textContent = phaseDesc();
-  renderFrameLog();
+  renderGame();
 }
 
 function confirmClearHistory(){
