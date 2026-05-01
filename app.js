@@ -59,11 +59,19 @@ let state = {
 const IDB_NAME    = 'SnookerTrackerDB';
 const IDB_VERSION = 1;
 const IDB_STORE   = 'history';
+let _historyDirty = false;
 
 function _openIDB(){
   return new Promise((resolve, reject) => {
+    if(typeof indexedDB === 'undefined'){
+      reject(new Error('IndexedDB unavailable'));
+      return;
+    }
     const req = indexedDB.open(IDB_NAME, IDB_VERSION);
-    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE, { keyPath: 'id' });
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE, { keyPath: 'id' });
+    };
     req.onsuccess = e => resolve(e.target.result);
     req.onerror   = e => reject(e.target.error);
   });
@@ -87,14 +95,26 @@ function saveHistoryIDB(data){
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 (function init(){
-  // Instant start: seed from localStorage (synchronous)
+  // One-time migration source from older versions that used localStorage.
+  let legacyHistory = null;
   try {
     const s = localStorage.getItem(STORAGE_KEY);
-    if(s) state.matchHistory = JSON.parse(s);
-  } catch(_){ state.matchHistory = []; }
-  // IDB is the real store — overwrite once loaded (fast, same device)
+    if(s) legacyHistory = JSON.parse(s);
+  } catch(_){ legacyHistory = null; }
+
+  // IDB is the real store. If it is empty, migrate old localStorage data once.
   loadHistoryIDB().then(data => {
-    if(Array.isArray(data)) state.matchHistory = data;
+    if(_historyDirty) return;
+    if(Array.isArray(data)){
+      state.matchHistory = data;
+    } else if(Array.isArray(legacyHistory) && legacyHistory.length){
+      state.matchHistory = legacyHistory;
+      saveHistoryIDB(state.matchHistory);
+    }
+    if(typeof indexedDB !== 'undefined'){
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
+    }
+    if(el('screen-history') && el('screen-history').classList.contains('active')) renderHistory();
   });
 })();
 
@@ -244,6 +264,8 @@ function renderBalls(){
         const gb = document.createElement('button');
         gb.className = 'ball-btn ball-potted';
         gb.style.cssText = '--ball-base:' + ball.bg + ';--ball-fg:' + ball.fg + ';';
+        gb.disabled = true;
+        gb.setAttribute('aria-label', ball.name + ' cleared');
         c.appendChild(gb);
         return;
       }
@@ -252,6 +274,9 @@ function renderBalls(){
     const btn = document.createElement('button');
     btn.className = 'ball-btn' + (on ? ' ball-on' : ' disabled');
     btn.style.cssText = '--ball-base:' + ball.bg + ';--ball-fg:' + ball.fg + ';--ball-glow:' + ball.bg + 'aa;';
+    btn.disabled = !on;
+    btn.title = ball.name + ' (' + ball.value + ')';
+    btn.setAttribute('aria-label', (on ? 'Pot ' : 'Unavailable ') + ball.name + ', ' + ball.value + ' points');
     btn.innerHTML = '';
     if(on) btn.addEventListener('click', () => { launchBallToLog(btn, ball); potBall(ball); });
     c.appendChild(btn);
@@ -281,6 +306,10 @@ function launchBallToLog(btn, ball){
     '--ball-base:' + ball.bg + ';' +
     '--ball-glow:' + ball.bg + 'aa;';
   document.body.appendChild(fly);
+  if(!fly.animate){
+    fly.remove();
+    return;
+  }
   // Arc: always lift a bit regardless of direction
   const arcLift = -Math.max(20, dist * 0.18);
   const anim = fly.animate([
@@ -960,6 +989,13 @@ function renderHistory(){
       '<div id="fd-'+i+'" class="frames-detail hidden">'+frameItems+'</div>'+
     '</div>' : '';
 
+    const quickStats = '<div class="card-quick-stats">'+
+      '<span><b>Pts</b> '+(m.p0Total||0)+'&ndash;'+(m.p1Total||0)+'</span>'+
+      '<span><b>Best</b> '+(m.p0Best||0)+'&ndash;'+(m.p1Best||0)+'</span>'+
+      '<span><b>Pots</b> '+(m.p0PotCount||0)+'&ndash;'+(m.p1PotCount||0)+'</span>'+
+      '<span><b>Fouls</b> '+(m.p0Fouls||0)+'&ndash;'+(m.p1Fouls||0)+'</span>'+
+    '</div>';
+
     // Aggregate pseudo-stat objects so buildStatsHtml works at match level
     const aggP0 = {
       breaks: frames.flatMap(f => (f.stats && f.stats.p0 && f.stats.p0.breaks) || []),
@@ -1001,6 +1037,7 @@ function renderHistory(){
         '<span class="card-score">'+m.p0Frames+'&thinsp;–&thinsp;'+m.p1Frames+'</span>'+
         '<span class="card-player p2 '+(w1?'winner':'')+'">'+esc(m.p1Name)+'</span>'+
       '</div>'+
+      quickStats+
       buildStatsHtml(m.p0Name, m.p1Name, aggP0, aggP1, m.p0Total||0, m.p1Total||0, m.p0Best||0, m.p1Best||0) +
       frameBreakdown+
     '</div>';
@@ -1109,11 +1146,12 @@ function confirmClearHistory(){
 }
 
 function persistHistory(){
-  const payload = JSON.stringify(state.matchHistory);
+  _historyDirty = true;
   // Primary: IndexedDB — persists through cache clears, lives on the device
   saveHistoryIDB(state.matchHistory);
-  // Mirror to localStorage as quick-boot seed
-  try{ localStorage.setItem(STORAGE_KEY, payload); }catch(_){}
+  if(typeof indexedDB !== 'undefined'){
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
+  }
 }
 
 // ─── Export / Import ─────────────────────────────────────────────────────────
@@ -1135,9 +1173,10 @@ function importHistory(){
   const input    = document.createElement('input');
   input.type     = 'file';
   input.accept   = '.json,application/json';
+  input.style.display = 'none';
   input.onchange = e => {
     const file = e.target.files[0];
-    if(!file) return;
+    if(!file){ input.remove(); return; }
     const reader    = new FileReader();
     reader.onload   = evt => {
       try {
@@ -1152,11 +1191,12 @@ function importHistory(){
         alert('Invalid history file — please choose a file exported from this app.');
       }
     };
+    reader.onloadend = () => input.remove();
+    reader.onerror = () => { alert('Could not read that file.'); input.remove(); };
     reader.readAsText(file);
   };
   document.body.appendChild(input);
   input.click();
-  document.body.removeChild(input);
 }
 
 // ─── Confirm dialog ───────────────────────────────────────────────────────────

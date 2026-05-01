@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'snooker-v1';
+const CACHE_NAME = 'snooker-v2';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -28,8 +28,6 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  // Never intercept API calls — they must reach the server
-  if (new URL(event.request.url).pathname.startsWith('/api/')) return;
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
