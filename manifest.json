@@ -1,0 +1,18 @@
+{
+  "name": "Snooker Tracker",
+  "short_name": "Snooker",
+  "description": "Snooker score and statistics tracker",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0e2c1d",
+  "theme_color": "#1f7640",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,6 +1,12 @@
 ﻿/* Snooker Tracker - style.css */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Remove 300ms tap delay on iOS/iPadOS Chrome */
+button, [role="button"], input, select {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 :root {
   --felt: #1f7640;
   --felt-mid: #195d33;
