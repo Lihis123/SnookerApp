@@ -125,18 +125,67 @@ function showScreen(id){
   el('screen-'+id).classList.add('active');
 }
 function showHistory(){ renderHistory(); showScreen('history'); }
+// ─── Player picker ───────────────────────────────────────────────────────────
+
+let _pickerSlot = 0;
+const _selectedPlayers = [null, null];
+
 function showSetup(){
-  const names = JSON.parse(localStorage.getItem('snooker_players') || '[]');
-  const dl = el('known-players');
-  if(dl) dl.innerHTML = names.map(n => '<option value="' + esc(n) + '">').join('');
+  _selectedPlayers[0] = null;
+  _selectedPlayers[1] = null;
+  const s0 = el('slot-name-0'), s1 = el('slot-name-1');
+  if(s0){ s0.textContent = 'Tap to select'; s0.classList.add('slot-placeholder'); }
+  if(s1){ s1.textContent = 'Tap to select'; s1.classList.add('slot-placeholder'); }
+  el('slot-0').classList.remove('slot-selected');
+  el('slot-1').classList.remove('slot-selected');
   showScreen('setup');
 }
 
-// ─── Setup ────────────────────────────────────────────────────────────────────
+function openPlayerPicker(slot){
+  _pickerSlot = slot;
+  const names = JSON.parse(localStorage.getItem('snooker_players') || '[]').slice().reverse();
+  const list = el('picker-prev-list');
+  el('picker-title').textContent = 'Select Player ' + (slot + 1);
+  el('picker-new-input').value = '';
+  if(names.length){
+    list.innerHTML = names.map(n => '<button class="picker-chip">' + esc(n) + '</button>').join('');
+    Array.from(list.querySelectorAll('.picker-chip')).forEach((btn, i) => {
+      btn.addEventListener('click', () => selectPlayer(names[i]));
+    });
+  } else {
+    list.innerHTML = '<span class="picker-empty">No previous players yet</span>';
+  }
+  el('player-picker-overlay').classList.remove('hidden');
+  // Handle Enter in new-name input
+  const inp = el('picker-new-input');
+  inp.onkeydown = e => { if(e.key === 'Enter'){ e.preventDefault(); confirmNewPlayer(); } };
+  setTimeout(() => inp.focus(), 80);
+}
 
-function startMatch(){
-  const p1 = el('player1-name').value.trim() || 'Player 1';
-  const p2 = el('player2-name').value.trim() || 'Player 2';
+function closePlayerPicker(){
+  el('player-picker-overlay').classList.add('hidden');
+}
+
+function closePlayerPickerOutside(e){
+  if(e.target === el('player-picker-overlay')) closePlayerPicker();
+}
+
+function selectPlayer(name){
+  _selectedPlayers[_pickerSlot] = name;
+  const nameEl = el('slot-name-' + _pickerSlot);
+  nameEl.textContent = name;
+  nameEl.classList.remove('slot-placeholder');
+  el('slot-' + _pickerSlot).classList.add('slot-selected');
+  closePlayerPicker();
+}
+
+function confirmNewPlayer(){
+  const name = el('picker-new-input').value.trim();
+  if(!name) return;
+  selectPlayer(name);
+}
+  const p1 = (_selectedPlayers[0] || '').trim() || 'Player 1';
+  const p2 = (_selectedPlayers[1] || '').trim() || 'Player 2';
   // Remember player names for future autocomplete
   const names = JSON.parse(localStorage.getItem('snooker_players') || '[]');
   [p1, p2].forEach(n => {
@@ -1260,8 +1309,8 @@ window.fuzzTest = function(iterations){
   iterations = iterations || 1000;
   // Seed match if not started
   if(!el('screen-game').classList.contains('active')){
-    el('player1-name').value = 'Fuzz1';
-    el('player2-name').value = 'Fuzz2';
+    _selectedPlayers[0] = 'Fuzz1';
+    _selectedPlayers[1] = 'Fuzz2';
     startMatch();
   }
   const fails = [];

@@ -22,17 +22,37 @@
       <div class="logo-ball"></div>
       <h1>Snooker Tracker</h1>
     </div>
-    <div class="form-group">
-      <label for="player1-name">Player 1</label>
-      <input type="text" id="player1-name" placeholder="Enter name" maxlength="20" autocomplete="off" list="known-players">
+
+    <!-- Player slots -->
+    <div class="player-slots">
+      <div class="player-slot" id="slot-0" onclick="openPlayerPicker(0)">
+        <span class="slot-label">Player 1</span>
+        <span class="slot-name slot-placeholder" id="slot-name-0">Tap to select</span>
+      </div>
+      <div class="vs-divider">VS</div>
+      <div class="player-slot" id="slot-1" onclick="openPlayerPicker(1)">
+        <span class="slot-label">Player 2</span>
+        <span class="slot-name slot-placeholder" id="slot-name-1">Tap to select</span>
+      </div>
     </div>
-    <div class="form-group">
-      <label for="player2-name">Player 2</label>
-      <input type="text" id="player2-name" placeholder="Enter name" maxlength="20" autocomplete="off" list="known-players">
-    </div>
-    <datalist id="known-players"></datalist>
+
     <button class="btn-primary" onclick="startMatch()">Start Match</button>
     <button class="btn-secondary" onclick="showHistory()">View History</button>
+  </div>
+
+  <!-- Player picker bottom-sheet -->
+  <div id="player-picker-overlay" class="player-picker-overlay hidden" onclick="closePlayerPickerOutside(event)">
+    <div class="player-picker-card">
+      <div class="picker-header">
+        <span id="picker-title">Select Player 1</span>
+        <button class="picker-close" onclick="closePlayerPicker()">&#10005;</button>
+      </div>
+      <div id="picker-prev-list" class="picker-prev-list"></div>
+      <div class="picker-new-row">
+        <input id="picker-new-input" class="picker-new-input" type="text" placeholder="New player name…" maxlength="20" autocomplete="off">
+        <button class="picker-add-btn" onclick="confirmNewPlayer()">Add</button>
+      </div>
+    </div>
   </div>
 </div>
 
