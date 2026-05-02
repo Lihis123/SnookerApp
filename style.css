@@ -491,26 +491,49 @@ body {
   text-shadow: 0 0 20px rgba(237,209,100,0.5);
 }
 
-/* Eliminated: trailing player cannot win */
+/* Eliminated: trailing player cannot win — needs snookers */
 .player-card.eliminated-player {
-  background: rgba(0,0,0,0.32);
-  border-color: rgba(255,255,255,0.08);
+  background: rgba(120,20,20,0.38);
+  border-color: rgba(255,80,80,0.55);
+  box-shadow: 0 0 0 2px rgba(255,60,60,0.25), var(--shadow-soft);
+  animation: elim-pulse 2s ease-in-out infinite;
+}
+
+@keyframes elim-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255,60,60,0.25), var(--shadow-soft); }
+  50%       { box-shadow: 0 0 0 4px rgba(255,60,60,0.5),  var(--shadow-soft); }
 }
 
 .player-card.eliminated-player .frame-score {
-  color: rgba(255,255,255,0.32);
+  color: rgba(255,200,200,0.7);
   text-shadow: none;
 }
 
 .player-card.eliminated-player .player-name {
-  color: rgba(255,255,255,0.35);
+  color: rgba(255,180,180,0.6);
 }
 
 .player-card.active-player.eliminated-player {
-  background: rgba(0,0,0,0.28);
-  border-color: rgba(237,209,100,0.26);
-  box-shadow: var(--shadow-soft);
+  background: rgba(120,20,20,0.5);
+  border-color: rgba(255,80,80,0.75);
 }
+
+.snookers-badge {
+  margin-top: 4px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #ff6b6b;
+  background: rgba(200,40,40,0.28);
+  border: 1px solid rgba(255,80,80,0.45);
+  border-radius: 6px;
+  padding: 2px 6px;
+  text-align: center;
+  animation: elim-pulse 2s ease-in-out infinite;
+}
+
+.snookers-badge.hidden { display: none; }
 
 .player-name {
   font-size: 0.78rem;
@@ -834,7 +857,7 @@ body {
 .btn-correct {
   aspect-ratio: 1 / 1;
   min-height: unset;
-  font-size: 0.85rem;
+  font-size: 1rem;
   word-break: break-word;
 }
 
@@ -854,6 +877,7 @@ body {
   background: rgba(150,24,24,0.72);
   color: #fff;
   border-color: rgba(255,120,120,0.3);
+  font-size: 1.7rem !important;
   min-height: 60px;
 }
 
@@ -863,6 +887,7 @@ body {
   background: rgba(255,255,255,0.1);
   color: var(--cream);
   border-color: rgba(255,255,255,0.24);
+  font-size: 1.7rem !important;
   min-height: 60px;
 }
 
@@ -872,6 +897,7 @@ body {
   background: rgba(26,79,204,0.38);
   color: var(--cream);
   border-color: rgba(100,160,255,0.35);
+  font-size: 1.7rem !important;
   min-height: 60px;
 }
 

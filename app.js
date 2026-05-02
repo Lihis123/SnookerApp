@@ -321,8 +321,13 @@ function renderGame(){
   // Eliminated: trailing player can't catch up even if they pot everything remaining
   const pts = ptsLeft();
   const s0 = p[0].score, s1 = p[1].score;
-  el('player-0-panel').classList.toggle('eliminated-player', s0 < s1 && pts + s0 < s1);
-  el('player-1-panel').classList.toggle('eliminated-player', s1 < s0 && pts + s1 < s0);
+  const p0Elim = s0 < s1 && pts + s0 < s1;
+  const p1Elim = s1 < s0 && pts + s1 < s0;
+  el('player-0-panel').classList.toggle('eliminated-player', p0Elim);
+  el('player-1-panel').classList.toggle('eliminated-player', p1Elim);
+  const b0 = el('p0-snookers'), b1 = el('p1-snookers');
+  if(b0) b0.classList.toggle('hidden', !p0Elim);
+  if(b1) b1.classList.toggle('hidden', !p1Elim);
 
   renderBalls();
   renderFrameLog();
@@ -928,8 +933,9 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
   };
   const head = (label) => '<div class="stat-section">'+label+'</div>';
 
-  // Total time for game statistics heading
+  // Total time and total visits for game statistics heading
   const totalTime = fmtTime((p0s.visitTimeMs||0) + (p1s.visitTimeMs||0));
+  const totalVisits = (p0s.visits||0) + (p1s.visits||0);
 
   // Compact colour-balls strip — one pill per colour that was potted
   const colorDefs = [
@@ -960,7 +966,7 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
 
   return '<div class="card-names-row"><span>'+esc(p0Name)+'</span><span></span><span>'+esc(p1Name)+'</span></div>' +
     '<div class="card-stats">' +
-      head('Game Statistics (' + totalTime + ')') +
+      head('Game Statistics (' + totalTime + ', ' + totalVisits + ' turns)') +
       sr(p0Score||0, p1Score||0, 'Total points') +
       sr(p0Best||p0s.highestBreak||0, p1Best||p1s.highestBreak||0, 'Best break') +
       sr(avgB(p0b), avgB(p1b), 'Avg break') +
