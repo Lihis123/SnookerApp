@@ -834,6 +834,8 @@ body {
 .btn-correct {
   aspect-ratio: 1 / 1;
   min-height: unset;
+  font-size: 0.85rem;
+  word-break: break-word;
 }
 
 .btn-action:active,
@@ -852,7 +854,6 @@ body {
   background: rgba(150,24,24,0.72);
   color: #fff;
   border-color: rgba(255,120,120,0.3);
-  font-size: 1.35rem;
   min-height: 60px;
 }
 
@@ -862,7 +863,6 @@ body {
   background: rgba(255,255,255,0.1);
   color: var(--cream);
   border-color: rgba(255,255,255,0.24);
-  font-size: 1.35rem;
   min-height: 60px;
 }
 
@@ -872,7 +872,6 @@ body {
   background: rgba(26,79,204,0.38);
   color: var(--cream);
   border-color: rgba(100,160,255,0.35);
-  font-size: 1.35rem;
   min-height: 60px;
 }
 
@@ -1150,6 +1149,13 @@ body {
   font-size: 0.78rem;
   padding: 3px 0;
   border-bottom: 1px dashed rgba(255,255,255,0.06);
+}
+
+.log-ts {
+  color: rgba(255,255,255,0.28);
+  font-size: 0.68rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .log-who {

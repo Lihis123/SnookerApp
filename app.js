@@ -463,16 +463,17 @@ function renderFrameLog(){
       descHtml = esc(e.desc);
     }
     return '<div class="' + cls + '">' +
+      (e.ts ? '<span class="log-ts">' + e.ts + '</span>' : '') +
       '<span class="log-who">' + esc(e.player) + '</span> ' +
       '<span class="log-desc">' + descHtml + '</span>' +
       (e.pts !== undefined ? '<span class="log-pts">+' + e.pts + '</span>' : '') +
     '</div>';
-  }).join('');
-  box.scrollTop = box.scrollHeight;
+  }).reverse().join('');
 }
 
 function addLog(type, player, desc, pts, playerIdx, ballId, balls){
-  state.frameLog.push({ type, player, desc, pts, playerIdx, ballId, balls });
+  const ts = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  state.frameLog.push({ type, player, desc, pts, playerIdx, ballId, balls, ts });
 }
 
 // ─── Potting ──────────────────────────────────────────────────────────────────
