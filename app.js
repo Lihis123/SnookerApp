@@ -484,7 +484,7 @@ function potBall(ball){
   // count that as a miss for the previous player before processing this pot.
   const missPicker = el('miss-picker');
   if(missPicker && !missPicker.classList.contains('hidden')){
-    commitMiss(state.currentPlayer, 'safety');
+    commitMiss(state.currentPlayer, 'medium');
     if(!isBallOn(ball.id)) return;
   }
   // Cancel any open miss picker / panels — user is potting instead
@@ -635,9 +635,19 @@ function showMissPicker(cp, name){
     _missTimer = null;
     // Only fire if picker is still visible (i.e. not cancelled)
     if(!panel.classList.contains('hidden')){
-      commitMiss(cp, 'safety');
+      commitMiss(cp, 'medium');
     }
   }, 5000);
+}
+
+function markSafety(){
+  // Ignore if miss picker is already open
+  const mp = el('miss-picker');
+  if(mp && !mp.classList.contains('hidden')) return;
+  hideFoulPanel();
+  hideCorrectPanel();
+  const cp = state.currentPlayer;
+  commitMiss(cp, 'safety');
 }
 
 function selectMissDifficulty(difficulty){
@@ -917,13 +927,8 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
   };
   const head = (label) => '<div class="stat-section">'+label+'</div>';
 
-  // Visits row: per-player count, total time in label
+  // Total time for game statistics heading
   const totalTime = fmtTime((p0s.visitTimeMs||0) + (p1s.visitTimeMs||0));
-  const visRow = '<div class="stat-row">' +
-    '<span class="sr-val">'+(p0s.visits||0)+'</span>' +
-    '<span class="sr-lbl">Visits \u00b7 '+totalTime+'</span>' +
-    '<span class="sr-val">'+(p1s.visits||0)+'</span>' +
-    '</div>';
 
   // Compact colour-balls strip — one pill per colour that was potted
   const colorDefs = [
@@ -954,7 +959,7 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
 
   return '<div class="card-names-row"><span>'+esc(p0Name)+'</span><span></span><span>'+esc(p1Name)+'</span></div>' +
     '<div class="card-stats">' +
-      head('Game Statistics') +
+      head('Game Statistics (' + totalTime + ')') +
       sr(p0Score||0, p1Score||0, 'Total points') +
       sr(p0Best||p0s.highestBreak||0, p1Best||p1s.highestBreak||0, 'Best break') +
       sr(avgB(p0b), avgB(p1b), 'Avg break') +
@@ -963,7 +968,6 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
       sr(posPct0, posPct1, 'Positional %') +
       sr(p0Pots, p1Pots, 'Total pots') +
       sr(sp0+'%', sp1+'%', 'Scoring visit %') +
-      visRow +
       (colorBallsStrip ? head('Potted Balls') + colorBallsStrip : '') +
       head('Misses & Safety') +
       pctRow(p0s.missEasy||0,   p1s.missEasy||0,   p0Pots, p1Pots, 'Easy misses',   true) +

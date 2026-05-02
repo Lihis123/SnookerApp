@@ -616,7 +616,7 @@ body {
 /* Quick action row (above balls) */
 .quick-action-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   padding: 10px 12px 0;
   flex-shrink: 0;
@@ -813,7 +813,7 @@ body {
   min-height: 45px;
   border-radius: 11px;
   border: 1px solid rgba(255,255,255,0.18);
-  font-size: 1.5rem;
+  font-size: 1.7rem;
   font-weight: 700;
   cursor: pointer;
   background: rgba(255,255,255,0.07);
@@ -852,7 +852,7 @@ body {
   background: rgba(150,24,24,0.72);
   color: #fff;
   border-color: rgba(255,120,120,0.3);
-  font-size: 1.1rem;
+  font-size: 1.35rem;
   min-height: 60px;
 }
 
@@ -862,11 +862,21 @@ body {
   background: rgba(255,255,255,0.1);
   color: var(--cream);
   border-color: rgba(255,255,255,0.24);
-  font-size: 1.1rem;
+  font-size: 1.35rem;
   min-height: 60px;
 }
 
 .btn-miss:hover { background: rgba(255,255,255,0.16); }
+
+.btn-safety {
+  background: rgba(26,79,204,0.38);
+  color: var(--cream);
+  border-color: rgba(100,160,255,0.35);
+  font-size: 1.35rem;
+  min-height: 60px;
+}
+
+.btn-safety:hover { background: rgba(26,79,204,0.55); }
 
 .btn-switch {
   background: rgba(255,255,255,0.08);
@@ -1048,7 +1058,7 @@ body {
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.24);
   font-weight: 800;
-  font-size: 0.82rem;
+  font-size: 1rem;
   cursor: pointer;
   color: #fff;
   transition: transform 0.1s, filter 0.15s;
