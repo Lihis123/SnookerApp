@@ -911,7 +911,7 @@ function finaliseFrame(winner){
 function buildMomentumHtml(p0Name, p1Name, log, p0Final, p1Final){
   if(!Array.isArray(log) || !log.length) return '';
   let s0 = 0, s1 = 0;
-  const points = [{ s0:0, s1:0, diff:0 }];
+  const points = [{ s0:0, s1:0 }];
 
   log.forEach(e => {
     const pts = Number(e.pts);
@@ -925,46 +925,36 @@ function buildMomentumHtml(p0Name, p1Name, log, p0Final, p1Final){
     } else {
       return;
     }
-    points.push({ s0, s1, diff:s0 - s1 });
+    points.push({ s0, s1 });
   });
 
   const final0 = Number(p0Final) || 0;
   const final1 = Number(p1Final) || 0;
   if(s0 !== final0 || s1 !== final1){
-    points.push({ s0:final0, s1:final1, diff:final0 - final1 });
+    points.push({ s0:final0, s1:final1 });
   }
   if(points.length < 2) return '';
 
-  const width = 320, height = 74, pad = 10;
-  const mid = height / 2;
-  const amp = (height / 2) - 10;
-  const maxAbs = Math.max(1, ...points.map(p => Math.abs(p.diff)));
-  const xStep = points.length > 1 ? (width - pad * 2) / (points.length - 1) : 0;
-  const coords = points.map((p, i) => {
-    const x = pad + i * xStep;
-    const y = mid - (p.diff / maxAbs) * amp;
-    return x.toFixed(1) + ',' + y.toFixed(1);
-  }).join(' ');
+  const width = 320, height = 74, padX = 10, padY = 6;
+  const maxScore = Math.max(1, final0, final1, ...points.map(p => Math.max(p.s0, p.s1)));
+  const xStep = (width - padX * 2) / (points.length - 1);
 
-  let leadChanges = 0, lastSign = 0;
-  points.forEach(p => {
-    const sign = p.diff > 0 ? 1 : p.diff < 0 ? -1 : 0;
-    if(sign && lastSign && sign !== lastSign) leadChanges++;
-    if(sign) lastSign = sign;
-  });
+  const toY = s => (height - padY) - ((s / maxScore) * (height - padY * 2));
+
+  const coords0 = points.map((p, i) => (padX + i * xStep).toFixed(1) + ',' + toY(p.s0).toFixed(1)).join(' ');
+  const coords1 = points.map((p, i) => (padX + i * xStep).toFixed(1) + ',' + toY(p.s1).toFixed(1)).join(' ');
 
   const finalDiff = final0 - final1;
-  const leaderText = finalDiff === 0 ? 'Level finish' :
-    (finalDiff > 0 ? esc(p0Name) + ' +' + finalDiff : esc(p1Name) + ' +' + (-finalDiff));
-  const swingText = 'Max swing ' + maxAbs + ' &middot; ' + leadChanges + ' lead change' + (leadChanges === 1 ? '' : 's');
+  const leaderText = finalDiff === 0 ? 'Level' :
+    (finalDiff > 0 ? esc(p0Name) + ' wins +' + finalDiff : esc(p1Name) + ' wins +' + (-finalDiff));
 
   return '<div class="momentum-card">' +
-    '<div class="momentum-head"><span>Frame Momentum</span><span>' + leaderText + '</span></div>' +
+    '<div class="momentum-head"><span>Score Chart</span><span>' + leaderText + '</span></div>' +
     '<svg class="momentum-svg" viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none" aria-hidden="true">' +
-      '<line class="momentum-zero" x1="' + pad + '" y1="' + mid + '" x2="' + (width - pad) + '" y2="' + mid + '"></line>' +
-      '<polyline class="momentum-line" points="' + coords + '"></polyline>' +
+      '<polyline class="momentum-line momentum-line-p1" points="' + coords1 + '"></polyline>' +
+      '<polyline class="momentum-line momentum-line-p0" points="' + coords0 + '"></polyline>' +
     '</svg>' +
-    '<div class="momentum-foot"><span>' + esc(p0Name) + '</span><span>' + swingText + '</span><span>' + esc(p1Name) + '</span></div>' +
+    '<div class="momentum-foot"><span>' + esc(p0Name) + ' ' + final0 + '</span><span></span><span>' + final1 + ' ' + esc(p1Name) + '</span></div>' +
   '</div>';
 }
 

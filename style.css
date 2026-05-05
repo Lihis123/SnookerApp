@@ -1449,9 +1449,7 @@ body {
   padding: 8px 9px 7px;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.1);
-  background:
-    linear-gradient(180deg, rgba(127,184,255,0.1) 0%, rgba(127,184,255,0.02) 49%, rgba(255,255,255,0.06) 50%, rgba(255,176,102,0.02) 51%, rgba(255,176,102,0.1) 100%),
-    rgba(0,0,0,0.18);
+  background: rgba(0,0,0,0.22);
 }
 
 .momentum-head,
@@ -1478,34 +1476,36 @@ body {
 
 .momentum-svg {
   width: 100%;
-  height: 58px;
+  height: 64px;
   display: block;
   margin: 3px 0;
   overflow: visible;
 }
 
-.momentum-zero {
-  stroke: rgba(255,255,255,0.24);
-  stroke-width: 1;
-  stroke-dasharray: 4 4;
-}
-
 .momentum-line {
   fill: none;
-  stroke: var(--gold-light);
-  stroke-width: 4;
+  stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.45));
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+}
+
+.momentum-line-p0 {
+  stroke: #7fb8ff;
+}
+
+.momentum-line-p1 {
+  stroke: #ffb066;
 }
 
 .momentum-foot {
   color: var(--dim);
-  font-size: 0.62rem;
+  font-size: 0.68rem;
+  font-weight: 700;
 }
 
 .momentum-foot span:first-child { color: #7fb8ff; }
-.momentum-foot span:last-child  { color: #ffb066; }
+.momentum-foot span:last-child  { color: #ffb066; text-align: right; }
 
 .card-stats {
   margin-top: 4px;
