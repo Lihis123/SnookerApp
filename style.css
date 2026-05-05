@@ -1444,6 +1444,69 @@ body {
   letter-spacing: 0.75px;
 }
 
+.momentum-card {
+  margin: 7px 0 5px;
+  padding: 8px 9px 7px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background:
+    linear-gradient(180deg, rgba(127,184,255,0.1) 0%, rgba(127,184,255,0.02) 49%, rgba(255,255,255,0.06) 50%, rgba(255,176,102,0.02) 51%, rgba(255,176,102,0.1) 100%),
+    rgba(0,0,0,0.18);
+}
+
+.momentum-head,
+.momentum-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.momentum-head {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+}
+
+.momentum-head span:last-child {
+  color: var(--cream);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.momentum-svg {
+  width: 100%;
+  height: 58px;
+  display: block;
+  margin: 3px 0;
+  overflow: visible;
+}
+
+.momentum-zero {
+  stroke: rgba(255,255,255,0.24);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.momentum-line {
+  fill: none;
+  stroke: var(--gold-light);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.45));
+}
+
+.momentum-foot {
+  color: var(--dim);
+  font-size: 0.62rem;
+}
+
+.momentum-foot span:first-child { color: #7fb8ff; }
+.momentum-foot span:last-child  { color: #ffb066; }
+
 .card-stats {
   margin-top: 4px;
   border-top: 1px solid rgba(255,255,255,0.09);
@@ -1659,6 +1722,59 @@ body {
 }
 
 .dialog-overlay.hidden { display: none; }
+
+.pwa-update-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 260;
+  transform: translateX(-50%);
+  width: min(calc(100% - 24px), 420px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(237,209,100,0.5);
+  background: linear-gradient(180deg, rgba(35,74,48,0.98) 0%, rgba(18,48,32,0.98) 100%);
+  color: var(--cream);
+  box-shadow: var(--shadow-strong);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.pwa-update-toast.hidden { display: none; }
+
+.pwa-update-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pwa-update-btn,
+.pwa-dismiss-btn {
+  border: none;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.pwa-update-btn {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #f1d86d 0%, #dcb646 100%);
+  color: #1e1b12;
+}
+
+.pwa-dismiss-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  color: var(--dim);
+}
 
 .dialog {
   width: 100%;

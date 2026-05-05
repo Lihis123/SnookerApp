@@ -319,15 +319,15 @@ function renderGame(){
   }
 
   // Eliminated: trailing player can't catch up even if they pot everything remaining
-  const pts = ptsLeft();
-  const s0 = p[0].score, s1 = p[1].score;
-  const p0Elim = s0 < s1 && pts + s0 < s1;
-  const p1Elim = s1 < s0 && pts + s1 < s0;
+  const p0Snookers = snookersNeededFor(0);
+  const p1Snookers = snookersNeededFor(1);
+  const p0Elim = p0Snookers > 0;
+  const p1Elim = p1Snookers > 0;
   el('player-0-panel').classList.toggle('eliminated-player', p0Elim);
   el('player-1-panel').classList.toggle('eliminated-player', p1Elim);
   const b0 = el('p0-snookers'), b1 = el('p1-snookers');
-  if(b0) b0.classList.toggle('hidden', !p0Elim);
-  if(b1) b1.classList.toggle('hidden', !p1Elim);
+  if(b0){ b0.textContent = snookerBadgeText(p0Snookers); b0.classList.toggle('hidden', !p0Elim); }
+  if(b1){ b1.textContent = snookerBadgeText(p1Snookers); b1.classList.toggle('hidden', !p1Elim); }
 
   renderBalls();
   renderFrameLog();
@@ -343,6 +343,18 @@ function ptsLeft(){
     return s;
   }
   return state.redsRemaining * 8 + 27;
+}
+
+function snookersNeededFor(playerIdx){
+  const playerScore = state.players[playerIdx].score;
+  const opponentScore = state.players[1 - playerIdx].score;
+  const deficitAfterClearance = opponentScore - playerScore - ptsLeft();
+  return deficitAfterClearance > 0 ? Math.ceil(deficitAfterClearance / 4) : 0;
+}
+
+function snookerBadgeText(count){
+  if(count <= 0) return '';
+  return 'NEEDS ' + count + ' SNOOKER' + (count === 1 ? '' : 'S');
 }
 
 function phaseDesc(){
@@ -896,9 +908,69 @@ function finaliseFrame(winner){
 
 // ─── Frame summary overlay ────────────────────────────────────────────────────
 
+function buildMomentumHtml(p0Name, p1Name, log, p0Final, p1Final){
+  if(!Array.isArray(log) || !log.length) return '';
+  let s0 = 0, s1 = 0;
+  const points = [{ s0:0, s1:0, diff:0 }];
+
+  log.forEach(e => {
+    const pts = Number(e.pts);
+    if(!Number.isFinite(pts) || pts <= 0) return;
+    if(e.type === 'pot' && (e.playerIdx === 0 || e.playerIdx === 1)){
+      if(e.playerIdx === 0) s0 += pts;
+      else s1 += pts;
+    } else if(e.type === 'foul' && (e.playerIdx === 0 || e.playerIdx === 1)){
+      if(e.playerIdx === 0) s1 += pts;
+      else s0 += pts;
+    } else {
+      return;
+    }
+    points.push({ s0, s1, diff:s0 - s1 });
+  });
+
+  const final0 = Number(p0Final) || 0;
+  const final1 = Number(p1Final) || 0;
+  if(s0 !== final0 || s1 !== final1){
+    points.push({ s0:final0, s1:final1, diff:final0 - final1 });
+  }
+  if(points.length < 2) return '';
+
+  const width = 320, height = 74, pad = 10;
+  const mid = height / 2;
+  const amp = (height / 2) - 10;
+  const maxAbs = Math.max(1, ...points.map(p => Math.abs(p.diff)));
+  const xStep = points.length > 1 ? (width - pad * 2) / (points.length - 1) : 0;
+  const coords = points.map((p, i) => {
+    const x = pad + i * xStep;
+    const y = mid - (p.diff / maxAbs) * amp;
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+
+  let leadChanges = 0, lastSign = 0;
+  points.forEach(p => {
+    const sign = p.diff > 0 ? 1 : p.diff < 0 ? -1 : 0;
+    if(sign && lastSign && sign !== lastSign) leadChanges++;
+    if(sign) lastSign = sign;
+  });
+
+  const finalDiff = final0 - final1;
+  const leaderText = finalDiff === 0 ? 'Level finish' :
+    (finalDiff > 0 ? esc(p0Name) + ' +' + finalDiff : esc(p1Name) + ' +' + (-finalDiff));
+  const swingText = 'Max swing ' + maxAbs + ' &middot; ' + leadChanges + ' lead change' + (leadChanges === 1 ? '' : 's');
+
+  return '<div class="momentum-card">' +
+    '<div class="momentum-head"><span>Frame Momentum</span><span>' + leaderText + '</span></div>' +
+    '<svg class="momentum-svg" viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none" aria-hidden="true">' +
+      '<line class="momentum-zero" x1="' + pad + '" y1="' + mid + '" x2="' + (width - pad) + '" y2="' + mid + '"></line>' +
+      '<polyline class="momentum-line" points="' + coords + '"></polyline>' +
+    '</svg>' +
+    '<div class="momentum-foot"><span>' + esc(p0Name) + '</span><span>' + swingText + '</span><span>' + esc(p1Name) + '</span></div>' +
+  '</div>';
+}
+
 // Returns categorized stats HTML for a player vs player comparison.
 // p0s, p1s are stat objects, p0Score/p1Score are scores, p0Best/p1Best best breaks.
-function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Best){
+function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Best, log){
   const avgB = bs => bs && bs.length ? Math.round(bs.reduce((a,b)=>a+b,0)/bs.length) : 0;
   const p0b = (p0s.breaks)||[], p1b = (p1s.breaks)||[];
   const sp0 = (p0s.visits||0) > 0 ? Math.round((p0s.scoringVisits||0)/p0s.visits*100) : 0;
@@ -964,7 +1036,10 @@ function buildStatsHtml(p0Name, p1Name, p0s, p1s, p0Score, p1Score, p0Best, p1Be
     }).join('') +
     '</div>';
 
+  const momentumHtml = buildMomentumHtml(p0Name, p1Name, log, p0Score||0, p1Score||0);
+
   return '<div class="card-names-row"><span>'+esc(p0Name)+'</span><span></span><span>'+esc(p1Name)+'</span></div>' +
+    momentumHtml +
     '<div class="card-stats">' +
       head('Game Statistics (' + totalTime + ', ' + totalVisits + ' turns)') +
       sr(p0Score||0, p1Score||0, 'Total points') +
@@ -992,7 +1067,7 @@ function showFrameSummary(f){
   el('fs-score').textContent = f.p0Score + ' – ' + f.p1Score;
   el('fs-frames').textContent = 'Frames: ' + p[0].frames + ' – ' + p[1].frames;
 
-  el('fs-stats').innerHTML = buildStatsHtml(p[0].name, p[1].name, f.stats.p0, f.stats.p1, f.p0Score, f.p1Score, f.p0Best, f.p1Best);
+  el('fs-stats').innerHTML = buildStatsHtml(p[0].name, p[1].name, f.stats.p0, f.stats.p1, f.p0Score, f.p1Score, f.p0Best, f.p1Best, f.log);
 
   ov.classList.remove('hidden');
 }
@@ -1106,7 +1181,7 @@ function renderHistory(){
       return '<div class="frame-detail-item">'+
           '<div class="frame-detail-title">Frame '+f.frameNum+' &mdash; '+winName+' wins &nbsp;'+f.p0Score+'&ndash;'+f.p1Score+'</div>'+
           '<div class="frame-detail-stats">'+
-            buildStatsHtml(m.p0Name, m.p1Name, p0s, p1s, f.p0Score, f.p1Score, f.p0Best, f.p1Best)+
+            buildStatsHtml(m.p0Name, m.p1Name, p0s, p1s, f.p0Score, f.p1Score, f.p0Best, f.p1Best, f.log)+
           '</div>'+
         '</div>';
     }).join('');
