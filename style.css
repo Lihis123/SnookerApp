@@ -857,8 +857,21 @@ body {
 .btn-correct {
   aspect-ratio: 1 / 1;
   min-height: unset;
-  font-size: 1rem;
-  word-break: break-word;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.btn-icon-glyph {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.btn-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  opacity: 0.85;
+  line-height: 1;
 }
 
 .btn-action:active,
@@ -878,7 +891,7 @@ body {
   color: #fff;
   border-color: rgba(255,120,120,0.3);
   font-size: 1.7rem !important;
-  min-height: 60px;
+  min-height: 72px;
 }
 
 .btn-foul:hover { filter: brightness(1.1); }
@@ -888,7 +901,7 @@ body {
   color: var(--cream);
   border-color: rgba(255,255,255,0.24);
   font-size: 1.7rem !important;
-  min-height: 60px;
+  min-height: 72px;
 }
 
 .btn-miss:hover { background: rgba(255,255,255,0.16); }
@@ -898,26 +911,26 @@ body {
   color: var(--cream);
   border-color: rgba(100,160,255,0.35);
   font-size: 1.7rem !important;
-  min-height: 60px;
+  min-height: 72px;
 }
 
 .btn-safety:hover { background: rgba(26,79,204,0.55); }
 
 .btn-switch {
-  background: rgba(255,255,255,0.08);
+  background: rgba(30,130,80,0.45);
   color: var(--cream);
-  border-color: rgba(255,255,255,0.2);
+  border-color: rgba(80,220,140,0.35);
 }
 
-.btn-switch:hover { background: rgba(255,255,255,0.14); }
+.btn-switch:hover { background: rgba(30,130,80,0.65); }
 
 .btn-undo {
-  background: rgba(255,255,255,0.08);
+  background: rgba(180,130,20,0.38);
   color: var(--cream);
-  border-color: rgba(255,255,255,0.2);
+  border-color: rgba(237,209,100,0.38);
 }
 
-.btn-undo:hover { background: rgba(255,255,255,0.14); }
+.btn-undo:hover { background: rgba(180,130,20,0.58); }
 
 .btn-frame-end {
   background: rgba(237,209,100,0.08);
@@ -929,21 +942,21 @@ body {
 
 .btn-concede {
   color: rgba(255,170,170,0.9);
-  border-color: rgba(255,100,100,0.25);
-  background: rgba(150,24,24,0.18);
+  border-color: rgba(255,100,100,0.38);
+  background: rgba(150,24,24,0.38);
 }
 
 .btn-concede:hover {
-  background: rgba(150,24,24,0.32);
+  background: rgba(150,24,24,0.58);
 }
 
 .btn-correct {
-  background: rgba(255,255,255,0.08);
+  background: rgba(60,90,200,0.32);
   color: var(--cream);
-  border-color: rgba(255,255,255,0.2);
+  border-color: rgba(120,160,255,0.38);
 }
 
-.btn-correct:hover { background: rgba(255,255,255,0.14); }
+.btn-correct:hover { background: rgba(60,90,200,0.52); }
 
 /* Correction panel */
 .correct-panel {
@@ -1078,12 +1091,12 @@ body {
 }
 
 .miss-btn {
-  width: 66px;
-  height: 66px;
+  width: 82px;
+  height: 82px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.24);
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 1.15rem;
   cursor: pointer;
   color: #fff;
   transition: transform 0.1s, filter 0.15s;
