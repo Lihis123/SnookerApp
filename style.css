@@ -1859,11 +1859,11 @@ body {
   .miss-picker { margin-left: 10px; margin-right: 10px; }
 
   .foul-btn { width: 68px; height: 68px; }
-  .miss-btn { width: 88px; height: 88px; }
+  .miss-btn { width: 100px; height: 100px; }
 
   .btn-action,
   .btn-concede,
-  .btn-correct { font-size: 0.78rem; }
+  .btn-correct { font-size: 1.7rem; }
 
   /* ─ Frame log: no height cap, fills remaining column ────────────────── */
   .frame-log-section { margin: 0 10px 10px; }
